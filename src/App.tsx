@@ -53,11 +53,14 @@ const App: React.FC = () => {
       return;
     }
 
+    // TODO: Implement actual cart save to database with custom name
+    // The cart name is for backend reference only, not displayed when creating orders
+
     setSaveCartModalOpened(false);
     setCartName('');
     notifications.show({
-      title: 'Success',
-      message: 'Cart saved successfully',
+      title: 'Cart Saved',
+      message: `Cart "${cartName}" saved successfully`,
       color: 'green'
     });
   };
@@ -65,9 +68,9 @@ const App: React.FC = () => {
   const handlePlaceOrder = async () => {
     if (orderedItems.length === 0) {
       notifications.show({
-        title: 'Error',
-        message: 'Cart is empty',
-        color: 'red'
+        title: 'Empty Cart',
+        message: 'Add items to cart before placing an order',
+        color: 'orange'
       });
       return;
     }
@@ -81,10 +84,14 @@ const App: React.FC = () => {
       return;
     }
 
+    // Direct order creation without prompting for a name
+    // TODO: Implement actual order creation to database
+
     setCartOpened(false);
+    setOrderedItems([]);
     notifications.show({
-      title: 'Success',
-      message: 'Order placed successfully',
+      title: 'Order Created',
+      message: `Order placed successfully with ${orderedItems.length} items`,
       color: 'green'
     });
   };
