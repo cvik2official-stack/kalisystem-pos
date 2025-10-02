@@ -1,14 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Group, Button, Badge, ActionIcon, Modal, TextInput, Stack, Text } from '@mantine/core';
 import { IconEdit, IconTrash, IconPlus, IconX } from '@tabler/icons-react';
 import { MeasureUnit } from '../../types';
+import { supabase } from '../../lib/supabase';
 
-interface MeasureUnitManagementProps {
-  measureUnits: MeasureUnit[];
-  onUpdate: (units: MeasureUnit[]) => void;
-}
+const MeasureUnitManagement: React.FC = () => {
+  const [measureUnits, setMeasureUnits] = useState<MeasureUnit[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const MeasureUnitManagement: React.FC<MeasureUnitManagementProps> = ({ measureUnits, onUpdate }) => {
+  useEffect(() => {
+    fetchMeasureUnits();
+  }, []);
+
+  const fetchMeasureUnits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('measure_units')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const mapped: MeasureUnit[] = (data || []).map(unit => ({
+        id: unit.id,
+        name: unit.name,
+        symbol: unit.symbol,
+        type: unit.type,
+        baseUnit: unit.base_unit,
+        conversionFactor: unit.conversion_factor
+      }));
+
+      setMeasureUnits(mapped);
+    } catch (error) {
+      console.error('Error fetching measure units:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onUpdate = async (units: MeasureUnit[]) => {
+    setMeasureUnits(units);
+    await fetchMeasureUnits();
+  };
   const [opened, setOpened] = useState(false);
   const [editingUnit, setEditingUnit] = useState<MeasureUnit | null>(null);
   const [formData, setFormData] = useState({
@@ -56,9 +89,13 @@ const MeasureUnitManagement: React.FC<MeasureUnitManagementProps> = ({ measureUn
     });
   };
 
+  if (loading) {
+    return <div>Loading measure units...</div>;
+  }
+
   return (
     <>
-      <Group justify="flex-end" mb="md">
+      <Group justify="space-between" mb="md">
         <Text size="lg" fw={600} style={{ color: '#000' }}>Measure Units</Text>
         <Button leftSection={<IconPlus size={16} />} onClick={() => setOpened(true)}>
           Add Unit

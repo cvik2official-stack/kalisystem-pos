@@ -1,14 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Group, ActionIcon, Modal, TextInput, Select, Switch, ColorInput } from '@mantine/core';
 import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
 import { User } from '../../types';
+import { supabase } from '../../lib/supabase';
 
-interface UserManagementProps {
-  users: User[];
-  onUpdate: (users: User[]) => void;
-}
+const UserManagement: React.FC = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdate }) => {
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const mapped: User[] = (data || []).map(profile => ({
+        id: profile.id,
+        name: profile.name,
+        role: profile.role,
+        team: profile.team_id,
+        color: profile.color,
+        active: profile.active
+      }));
+
+      setUsers(mapped);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onUpdate = async (updatedUsers: User[]) => {
+    setUsers(updatedUsers);
+    await fetchUsers();
+  };
   const [opened, setOpened] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -62,6 +95,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ users, onUpdate }) => {
       active: true,
     });
   };
+
+  if (loading) {
+    return <div>Loading users...</div>;
+  }
 
   const rows = users.map((user) => (
     <Table.Tr key={user.id}>
