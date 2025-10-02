@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, Container, Title } from '@mantine/core';
 import { IconCategory, IconTruck, IconRuler, IconUsers } from '@tabler/icons-react';
 import { useCategories } from '../../hooks/useCategories';
@@ -16,17 +16,24 @@ const TagManagement: React.FC<TagManagementProps> = ({ initialView = 'categories
   const { categories, loading: categoriesLoading } = useCategories();
   const { suppliers, loading: suppliersLoading } = useSuppliers();
 
-  const getInitialTab = () => {
-    if (initialView === 'users') return 'users';
-    if (initialView === 'suppliers') return 'suppliers';
-    if (initialView === 'tags') return 'units';
+  const getTabValue = (view: string) => {
+    if (view === 'users') return 'users';
+    if (view === 'suppliers') return 'suppliers';
+    if (view === 'tags') return 'units';
+    if (view === 'categories') return 'categories';
     return 'categories';
   };
+
+  const [activeTab, setActiveTab] = useState<string>(getTabValue(initialView));
+
+  useEffect(() => {
+    setActiveTab(getTabValue(initialView));
+  }, [initialView]);
 
   return (
     <Container size="xl" style={{ color: '#000' }} pt="md">
       <Title order={2} mb="lg" style={{ color: '#000' }}>Management</Title>
-      <Tabs defaultValue={getInitialTab()}>
+      <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'categories')}>
         <Tabs.List>
           <Tabs.Tab value="categories" leftSection={<IconCategory size={16} />}>
             Categories
