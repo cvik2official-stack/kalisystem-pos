@@ -1,43 +1,80 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs, Container, Title } from '@mantine/core';
-import { IconTags, IconRuler, IconBrandBehance } from '@tabler/icons-react';
-import TagsManagement from './TagsManagement';
-import { useTagManagement } from '../../hooks/useTagManagement';
+import { IconCategory, IconTruck, IconRuler, IconUsers } from '@tabler/icons-react';
+import { useCategories } from '../../hooks/useCategories';
+import { useSuppliers } from '../../hooks/useSuppliers';
+import CategoryManagement from './CategoryManagement';
+import SupplierManagement from './SupplierManagement';
+import UserManagement from './UserManagement';
+import MeasureUnitManagement from './MeasureUnitManagement';
 
-const TagManagement: React.FC = () => {
-  const { tagData, brandTags, measureUnitTags, updateBrandTags, updateMeasureUnitTags } = useTagManagement();
+interface TagManagementProps {
+  initialView?: string;
+}
+
+const TagManagement: React.FC<TagManagementProps> = ({ initialView = 'categories' }) => {
+  const { categories, loading: categoriesLoading } = useCategories();
+  const { suppliers, loading: suppliersLoading } = useSuppliers();
+
+  const getInitialTab = () => {
+    if (initialView === 'users') return 'users';
+    if (initialView === 'suppliers') return 'suppliers';
+    if (initialView === 'tags') return 'units';
+    return 'categories';
+  };
 
   return (
-    <Container size="lg" style={{ color: '#000' }}>
-      <Title order={2} mb="lg" style={{ color: '#000' }}>Tag Management</Title>
-      <Tabs defaultValue="brands">
+    <Container size="xl" style={{ color: '#000' }} pt="md">
+      <Title order={2} mb="lg" style={{ color: '#000' }}>Management</Title>
+      <Tabs defaultValue={getInitialTab()}>
         <Tabs.List>
-          <Tabs.Tab value="brands" leftSection={<IconBrandBehance size={16} />}>
-            Brand Tags
+          <Tabs.Tab value="categories" leftSection={<IconCategory size={16} />}>
+            Categories
+          </Tabs.Tab>
+          <Tabs.Tab value="suppliers" leftSection={<IconTruck size={16} />}>
+            Suppliers
           </Tabs.Tab>
           <Tabs.Tab value="units" leftSection={<IconRuler size={16} />}>
             Measure Units
           </Tabs.Tab>
+          <Tabs.Tab value="users" leftSection={<IconUsers size={16} />}>
+            Users
+          </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="brands" pt="md">
-          <TagsManagement
-            tags={brandTags}
-            onUpdate={updateBrandTags}
-            title="Brand Tags"
-            placeholder="Enter brand name (e.g., Premium, Organic, Local)"
-            tagType="brand"
-          />
+        <Tabs.Panel value="categories" pt="md">
+          {categoriesLoading ? (
+            <div>Loading categories...</div>
+          ) : (
+            <CategoryManagement
+              categories={categories}
+              onUpdate={(updatedCategories) => {
+                console.log('Categories updated:', updatedCategories);
+              }}
+            />
+          )}
+        </Tabs.Panel>
+
+        <Tabs.Panel value="suppliers" pt="md">
+          {suppliersLoading ? (
+            <div>Loading suppliers...</div>
+          ) : (
+            <SupplierManagement
+              suppliers={suppliers}
+              categories={categories}
+              onUpdate={(updatedSuppliers) => {
+                console.log('Suppliers updated:', updatedSuppliers);
+              }}
+            />
+          )}
         </Tabs.Panel>
 
         <Tabs.Panel value="units" pt="md">
-          <TagsManagement
-            tags={measureUnitTags}
-            onUpdate={updateMeasureUnitTags}
-            title="Measure Units"
-            placeholder="Enter unit symbol (e.g., kg, pcs, L)"
-            tagType="unit"
-          />
+          <MeasureUnitManagement />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="users" pt="md">
+          <UserManagement />
         </Tabs.Panel>
       </Tabs>
     </Container>
