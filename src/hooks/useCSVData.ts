@@ -8,13 +8,15 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQxaY0FXgYSKVrYoo-1k9bkSQDjZPKwpOnvQbYWB1QW4XT9rwU0GJUq4lN0YLRMXKXS4XHi2MsTfZLM/pub?gid=917352588&single=true&output=csv';
 
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
 export const useCSVData = (forceFallback: boolean = false) => {
   const [items, setItems] = useState<CSVItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingFallback, setUsingFallback] = useState(false);
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const fetchCSVFallback = async (): Promise<CSVItem[]> => {
     console.log('Using CSV fallback mode...');
@@ -59,6 +61,15 @@ export const useCSVData = (forceFallback: boolean = false) => {
       }
 
       // Try database first (only if not forced to fallback)
+      if (!supabase) {
+        console.warn('Supabase not configured, falling back to CSV');
+        const csvItems = await fetchCSVFallback();
+        setItems(csvItems);
+        setUsingFallback(true);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: supabaseError } = await supabase
         .from('items')
         .select('*')

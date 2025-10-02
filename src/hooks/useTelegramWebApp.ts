@@ -1,5 +1,22 @@
 import { useEffect, useState } from 'react';
 
+export interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+export interface TelegramWebAppData {
+  query_id?: string;
+  user?: TelegramUser;
+  auth_date: number;
+  hash: string;
+}
+
 declare global {
   interface Window {
     Telegram?: {
@@ -7,6 +24,9 @@ declare global {
         ready: () => void;
         close: () => void;
         expand: () => void;
+        sendData: (data: string) => void;
+        initData: string;
+        initDataUnsafe: TelegramWebAppData;
         MainButton: {
           text: string;
           color: string;
@@ -48,6 +68,7 @@ declare global {
 export const useTelegramWebApp = () => {
   const [isReady, setIsReady] = useState(false);
   const [webApp, setWebApp] = useState<Window['Telegram']>()
+  const [user, setUser] = useState<TelegramUser | null>(null);
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -55,16 +76,43 @@ export const useTelegramWebApp = () => {
       tg.ready();
       tg.expand();
       setWebApp(window.Telegram);
+
+      if (tg.initDataUnsafe?.user) {
+        setUser(tg.initDataUnsafe.user);
+      }
+
       setIsReady(true);
     } else {
-      // Fallback for development
       setIsReady(true);
     }
   }, []);
 
+  const sendData = (data: Record<string, any>) => {
+    if (webApp?.WebApp) {
+      webApp.WebApp.sendData(JSON.stringify(data));
+    }
+  };
+
+  const ready = () => {
+    webApp?.WebApp?.ready();
+  };
+
+  const expand = () => {
+    webApp?.WebApp?.expand();
+  };
+
+  const close = () => {
+    webApp?.WebApp?.close();
+  };
+
   return {
     isReady,
     webApp: webApp?.WebApp,
+    user,
+    sendData,
+    ready,
+    expand,
+    close,
     themeParams: webApp?.WebApp?.themeParams || {},
     colorScheme: webApp?.WebApp?.colorScheme || 'light'
   };

@@ -8,6 +8,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
 interface CSVImportProps {
   opened: boolean;
   onClose: () => void;
@@ -32,9 +36,6 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
-  // Debug Supabase connection
-  const supabase = createClient(supabaseUrl, supabaseKey);
-  
   React.useEffect(() => {
     setDebugInfo(`Supabase URL: ${supabaseUrl ? 'Set' : 'Missing'}, Key: ${supabaseKey ? 'Set' : 'Missing'}`);
   }, []);
@@ -75,6 +76,15 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
   const handleImport = async () => {
     if (!file) return;
 
+    if (!supabase) {
+      notifications.show({
+        title: 'Error',
+        message: 'Supabase is not configured. Please check environment variables.',
+        color: 'red',
+      });
+      return;
+    }
+
     setImporting(true);
     setProgress(0);
 
@@ -103,9 +113,9 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
           // Process items one by one to avoid batch conflicts
           for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            
+
             console.log(`Processing item ${i + 1}/${totalItems}:`, item.Item_name);
-            
+
             // Skip items with missing required fields
             if (!item.Item_name || !item.category || !item.default_supplier) {
               console.log('Skipping item - missing required fields');
@@ -117,7 +127,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
             try {
               console.log('Checking if item exists...');
               // Check if item already exists
-              const { data: existingItem, error: selectError } = await supabase
+              const { data: existingItem, error: selectError } = await supabase!
                 .from('items')
                 .select('id')
                 .eq('item_name', item.Item_name)
@@ -145,7 +155,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
               if (existingItem) {
                 console.log('Updating existing item...');
                 // Update existing item
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabase!
                   .from('items')
                   .update(dbItem)
                   .eq('id', existingItem.id);
@@ -159,7 +169,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ opened, onClose }) => {
               } else {
                 console.log('Inserting new item...');
                 // Insert new item
-                const { error: insertError } = await supabase
+                const { error: insertError } = await supabase!
                   .from('items')
                   .insert([dbItem]);
 

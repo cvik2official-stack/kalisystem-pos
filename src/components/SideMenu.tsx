@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { Stack, Text, Button, Badge, Divider, Group, Switch } from '@mantine/core';
-import { 
-  IconShoppingCart, 
-  IconTable, 
-  IconClipboardList, 
-  IconUsers, 
-  IconCategory, 
-  IconTruck, 
+import {
+  IconShoppingCart,
+  IconTable,
+  IconClipboardList,
+  IconUsers,
+  IconCategory,
+  IconTruck,
   IconTags,
   IconFileImport,
   IconDownload,
   IconRefresh,
   IconCloud,
-  IconDatabase
+  IconDatabase,
+  IconShoppingBag
 } from '@tabler/icons-react';
 import { OrderedCSVItem } from '../types';
 import CSVImport from './CSVImport';
@@ -43,41 +44,47 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const [googleSyncOpened, setGoogleSyncOpened] = useState(false);
 
   const menuItems = [
-    { 
-      key: 'items', 
-      label: 'Items', 
-      icon: IconTable, 
-      description: 'Browse and manage items' 
+    {
+      key: 'items',
+      label: 'Items',
+      icon: IconTable,
+      description: 'Browse and manage items'
     },
-    { 
-      key: 'orders', 
-      label: 'Orders', 
-      icon: IconClipboardList, 
-      description: 'View order history' 
+    {
+      key: 'carts',
+      label: 'Carts',
+      icon: IconShoppingBag,
+      description: 'Manage saved carts'
     },
-    { 
-      key: 'users', 
-      label: 'Users', 
-      icon: IconUsers, 
-      description: 'Manage users and roles' 
+    {
+      key: 'orders',
+      label: 'Orders',
+      icon: IconClipboardList,
+      description: 'View order history'
     },
-    { 
-      key: 'categories', 
-      label: 'Categories', 
-      icon: IconCategory, 
-      description: 'Organize item categories' 
+    {
+      key: 'users',
+      label: 'Users',
+      icon: IconUsers,
+      description: 'Manage users and roles'
     },
-    { 
-      key: 'suppliers', 
-      label: 'Suppliers', 
-      icon: IconTruck, 
-      description: 'Manage supplier information' 
+    {
+      key: 'categories',
+      label: 'Categories',
+      icon: IconCategory,
+      description: 'Organize item categories'
     },
-    { 
-      key: 'tags', 
-      label: 'Tags', 
-      icon: IconTags, 
-      description: 'Manage tags and labels' 
+    {
+      key: 'suppliers',
+      label: 'Suppliers',
+      icon: IconTruck,
+      description: 'Manage supplier information'
+    },
+    {
+      key: 'tags',
+      label: 'Tags',
+      icon: IconTags,
+      description: 'Manage tags and labels'
     },
   ];
 

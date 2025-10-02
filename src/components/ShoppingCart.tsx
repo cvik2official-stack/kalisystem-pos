@@ -7,11 +7,13 @@ import { notifications } from '@mantine/notifications';
 interface ShoppingCartProps {
   orderedItems: OrderedCSVItem[];
   setOrderedItems: React.Dispatch<React.SetStateAction<OrderedCSVItem[]>>;
-  onCreateOrder: () => void;
+  onSaveCart?: () => void;
+  onPlaceOrder?: () => void;
   onClose: () => void;
+  telegramUserId?: number;
 }
 
-const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedItems, onCreateOrder, onClose }) => {
+const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedItems, onSaveCart, onPlaceOrder, onClose, telegramUserId }) => {
   const [numpadOpened, setNumpadOpened] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number>(-1);
   const [customQuantity, setCustomQuantity] = useState<number>(0);
@@ -190,12 +192,25 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
         >
           Reset Cart
         </Button>
-        <Button
-          onClick={onCreateOrder}
-          disabled={orderedItems.length === 0}
-        >
-          Save Order
-        </Button>
+        <Group gap="sm">
+          {onSaveCart && (
+            <Button
+              variant="outline"
+              onClick={onSaveCart}
+              disabled={orderedItems.length === 0}
+            >
+              Save Cart
+            </Button>
+          )}
+          {onPlaceOrder && (
+            <Button
+              onClick={onPlaceOrder}
+              disabled={orderedItems.length === 0}
+            >
+              Place Order
+            </Button>
+          )}
+        </Group>
       </Group>
 
       {/* Custom Quantity Numpad Modal */}

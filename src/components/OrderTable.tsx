@@ -6,6 +6,10 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
 interface Order {
   id: string;
   telegram_user_id: string;
@@ -31,12 +35,16 @@ const OrderTable: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   const fetchOrders = async () => {
     setLoading(true);
     setError(null);
-    
+
+    if (!supabase) {
+      setError('Supabase is not configured');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('orders')
