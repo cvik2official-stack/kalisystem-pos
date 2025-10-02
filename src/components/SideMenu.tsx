@@ -26,19 +26,15 @@ interface SideMenuProps {
   onCreateOrder: () => void;
   onExport: () => void;
   onRefresh: () => void;
-  forceFallback: boolean;
-  onToggleFallback: (enabled: boolean) => void;
 }
 
-const SideMenu: React.FC<SideMenuProps> = ({ 
-  orderedItems, 
-  currentPage, 
-  onNavigation, 
-  onCreateOrder, 
-  onExport, 
-  onRefresh,
-  forceFallback,
-  onToggleFallback
+const SideMenu: React.FC<SideMenuProps> = ({
+  orderedItems,
+  currentPage,
+  onNavigation,
+  onCreateOrder,
+  onExport,
+  onRefresh
 }) => {
   const [csvImportOpened, setCsvImportOpened] = useState(false);
   const [googleSyncOpened, setGoogleSyncOpened] = useState(false);
@@ -155,36 +151,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
               );
             })}
           </Stack>
-        </div>
-
-        <Divider />
-
-        {/* Data Source Section */}
-        <div>
-          <Text size="sm" fw={600} mb="xs" style={{ color: '#000' }}>
-            Data Source
-          </Text>
-          <Group justify="space-between" mb="xs">
-            <Group gap="xs">
-              <IconDatabase size={16} style={{ color: forceFallback ? '#666' : '#000' }} />
-              <Text size="sm" style={{ color: forceFallback ? '#666' : '#000' }}>
-                {forceFallback ? 'CSV Mode' : 'Database Mode'}
-              </Text>
-            </Group>
-            <Switch
-              size="sm"
-              checked={forceFallback}
-              onChange={(event) => onToggleFallback(event.currentTarget.checked)}
-              onLabel="CSV"
-              offLabel="DB"
-            />
-          </Group>
-          <Text size="xs" c="dimmed" mb="md">
-            {forceFallback 
-              ? 'Using Google Sheets CSV directly' 
-              : 'Using Supabase database with CSV fallback'
-            }
-          </Text>
         </div>
 
         <Divider />

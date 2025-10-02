@@ -7,7 +7,7 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/dropzone/styles.css';
-import { useCSVData } from './hooks/useCSVData';
+import { useItems } from './hooks/useItems';
 import { useTelegramWebApp } from './hooks/useTelegramWebApp';
 import { OrderedCSVItem } from './types';
 import SideMenu from './components/SideMenu';
@@ -27,9 +27,8 @@ const App: React.FC = () => {
   const [orderedItems, setOrderedItems] = useState<OrderedCSVItem[]>([]);
   const [currentPage, setCurrentPage] = useState('items');
   const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('light');
-  const [forceFallback, setForceFallback] = useState(false);
 
-  const { items, loading, error, refetch, usingFallback } = useCSVData(forceFallback);
+  const { items, loading, error, refetch } = useItems();
   const { user, isReady } = useTelegramWebApp();
 
   const toggleColorScheme = () => {
@@ -121,8 +120,6 @@ const App: React.FC = () => {
             loading={loading}
             error={error}
             refetch={refetch}
-            usingFallback={usingFallback}
-            forceFallback={forceFallback}
           />
         );
       case 'carts':
@@ -157,8 +154,6 @@ const App: React.FC = () => {
             loading={loading}
             error={error}
             refetch={refetch}
-            usingFallback={usingFallback}
-            forceFallback={forceFallback}
           />
         );
     }
@@ -194,8 +189,6 @@ const App: React.FC = () => {
               onCreateOrder={handleCreateOrder}
               onExport={handleExport}
               onRefresh={refetch}
-              forceFallback={forceFallback}
-              onToggleFallback={setForceFallback}
             />
           </AppShell.Navbar>
 

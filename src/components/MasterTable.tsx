@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, ActionIcon, Group, LoadingOverlay, Alert, Paper, Text, TextInput, Button, Flex, Menu, Modal, Select, Checkbox, Tooltip, Autocomplete } from '@mantine/core';
 import { IconEdit, IconTrash, IconAlertCircle, IconSearch, IconMenu2, IconX, IconColumns, IconPlus, IconSettings, IconCategory } from '@tabler/icons-react';
-import { useCSVData } from '../hooks/useCSVData';
 import { OrderedCSVItem } from '../types';
 import ItemForm from './ItemForm';
 import { notifications } from '@mantine/notifications';
@@ -12,20 +11,21 @@ interface MasterTableProps {
   toggleColorScheme: () => void;
   orderedItems: OrderedCSVItem[];
   setOrderedItems: React.Dispatch<React.SetStateAction<OrderedCSVItem[]>>;
-  forceFallback?: boolean;
+  items: any[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => void;
 }
 
-const MasterTable: React.FC<MasterTableProps> = ({ 
-  colorScheme, 
-  toggleColorScheme, 
-  orderedItems, 
-  setOrderedItems, 
+const MasterTable: React.FC<MasterTableProps> = ({
+  colorScheme,
+  toggleColorScheme,
+  orderedItems,
+  setOrderedItems,
   items,
   loading,
   error,
-  refetch,
-  usingFallback,
-  forceFallback 
+  refetch
 }) => {
   const [displayItems, setDisplayItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -404,12 +404,6 @@ const MasterTable: React.FC<MasterTableProps> = ({
   return (
     <Paper style={{ border: 'none', boxShadow: 'none' }}>
       <div style={{ padding: '12px', borderBottom: '1px solid #e9ecef' }}>
-        {usingFallback && (
-          <Alert color="orange" mb="xs" style={{ fontSize: '12px', padding: '8px' }}>
-            <Text size="xs">⚠️ Using CSV fallback mode - database unavailable</Text>
-          </Alert>
-        )}
-        
         {/* Search bar - full width on mobile, part of flex on desktop */}
         <div style={{ marginBottom: '8px' }}>
           <Autocomplete

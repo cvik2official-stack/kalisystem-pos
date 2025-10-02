@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Text, Group, Paper, Badge, LoadingOverlay, Alert, Button, ActionIcon, Collapse, Box } from '@mantine/core';
 import { IconAlertCircle, IconChevronDown, IconChevronRight, IconRefresh } from '@tabler/icons-react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
+import { useOrders } from '../hooks/useOrders';
 
 interface Order {
   id: string;
@@ -29,38 +22,9 @@ interface GroupedOrder {
 }
 
 const OrderTable: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { orders, loading, error, refetch } = useOrders();
   const [groupedOrders, setGroupedOrders] = useState<GroupedOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    setError(null);
-
-    if (!supabase) {
-      setError('Supabase is not configured');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setOrders(data || []);
-      groupOrdersByOrderId(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch orders');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const groupOrdersByOrderId = (ordersData: Order[]) => {
     const grouped = ordersData.reduce((acc, order) => {
@@ -94,8 +58,8 @@ const OrderTable: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    groupOrdersByOrderId(orders);
+  }, [orders]);
 
   const toggleOrderExpansion = (orderId: string) => {
     const newExpanded = new Set(expandedOrders);
@@ -129,7 +93,7 @@ const OrderTable: React.FC = () => {
         <Alert icon={<IconAlertCircle size={16} />} title="Error loading orders" color="red" mb="md">
           {error}
         </Alert>
-        <Button onClick={fetchOrders} leftSection={<IconRefresh size={16} />}>
+        <Button onClick={refetch} leftSection={<IconRefresh size={16} />}>
           Retry
         </Button>
       </Paper>
@@ -143,8 +107,8 @@ const OrderTable: React.FC = () => {
           <Text size="lg" fw={600} style={{ color: '#000' }}>
             Orders ({groupedOrders.length})
           </Text>
-          <Button 
-            onClick={fetchOrders} 
+          <Button
+            onClick={refetch}
             leftSection={<IconRefresh size={16} />}
             variant="light"
             size="sm"

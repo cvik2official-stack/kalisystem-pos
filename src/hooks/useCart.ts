@@ -1,12 +1,5 @@
 import { useState, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+import { supabase } from '../lib/supabase';
 
 export interface CartItem {
   id?: string;
@@ -75,11 +68,6 @@ export const useCart = () => {
     telegramUserId: number,
     isTemplate: boolean = false
   ): Promise<string | null> => {
-    if (!supabase) {
-      setError('Supabase not configured');
-      return null;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -119,11 +107,6 @@ export const useCart = () => {
   };
 
   const loadCart = async (cartId: string): Promise<boolean> => {
-    if (!supabase) {
-      setError('Supabase not configured');
-      return false;
-    }
-
     setLoading(true);
     setError(null);
 

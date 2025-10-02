@@ -25,15 +25,8 @@ import {
   IconStar,
   IconStarFilled
 } from '@tabler/icons-react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { notifications } from '@mantine/notifications';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
 
 interface Cart {
   id: string;
@@ -66,16 +59,6 @@ const CartManagement: React.FC<CartManagementProps> = ({
   }, []);
 
   const loadCarts = async () => {
-    if (!supabase) {
-      notifications.show({
-        title: 'Error',
-        message: 'Supabase not configured',
-        color: 'red'
-      });
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -125,7 +108,7 @@ const CartManagement: React.FC<CartManagementProps> = ({
   };
 
   const handleDeleteCart = async () => {
-    if (!supabase || !cartToDelete) return;
+    if (!cartToDelete) return;
 
     try {
       const { error } = await supabase
@@ -155,7 +138,6 @@ const CartManagement: React.FC<CartManagementProps> = ({
   };
 
   const handleDuplicateCart = async (cartId: string) => {
-    if (!supabase) return;
 
     try {
       const { data: originalCart, error: cartError } = await supabase
@@ -217,7 +199,6 @@ const CartManagement: React.FC<CartManagementProps> = ({
   };
 
   const handleToggleTemplate = async (cartId: string, currentValue: boolean) => {
-    if (!supabase) return;
 
     try {
       const { error } = await supabase
