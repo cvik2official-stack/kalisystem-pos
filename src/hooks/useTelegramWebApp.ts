@@ -93,6 +93,19 @@ export const useTelegramWebApp = () => {
     }
   };
 
+  const showMainButton = (text: string, onClick: () => void) => {
+    if (webApp?.WebApp?.MainButton) {
+      webApp.WebApp.MainButton.text = text;
+      webApp.WebApp.MainButton.show();
+      webApp.WebApp.MainButton.onClick(onClick);
+    }
+  };
+
+  const hideMainButton = () => {
+    if (webApp?.WebApp?.MainButton) {
+      webApp.WebApp.MainButton.hide();
+    }
+  };
   const ready = () => {
     webApp?.WebApp?.ready();
   };
@@ -110,6 +123,8 @@ export const useTelegramWebApp = () => {
     webApp: webApp?.WebApp,
     user,
     sendData,
+    showMainButton,
+    hideMainButton,
     ready,
     expand,
     close,

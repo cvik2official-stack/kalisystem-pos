@@ -3,6 +3,7 @@ import { Table, ActionIcon, Group, Text, Button, NumberInput, Modal } from '@man
 import { IconPlus, IconMinus, IconTrash, IconDeviceMobile } from '@tabler/icons-react';
 import { OrderedCSVItem } from '../types';
 import { notifications } from '@mantine/notifications';
+import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
 
 interface ShoppingCartProps {
   orderedItems: OrderedCSVItem[];
@@ -14,6 +15,7 @@ interface ShoppingCartProps {
 }
 
 const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedItems, onSaveCart, onPlaceOrder, onClose, telegramUserId }) => {
+  const { showMainButton, hideMainButton } = useTelegramWebApp();
   const [numpadOpened, setNumpadOpened] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number>(-1);
   const [customQuantity, setCustomQuantity] = useState<number>(0);
@@ -29,6 +31,19 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    // Show Telegram main button when cart has items
+    if (orderedItems.length > 0 && onPlaceOrder) {
+      showMainButton('Create Order', onPlaceOrder);
+    } else {
+      hideMainButton();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      hideMainButton();
+    };
+  }, [orderedItems.length, onPlaceOrder, showMainButton, hideMainButton]);
   const updateQuantity = (index: number, newQuantity: number) => {
     if (newQuantity <= 0) {
       // Remove item if quantity is 0 or negative

@@ -114,6 +114,15 @@ const App: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
+      // Send order to Telegram
+      try {
+        const telegramMessage = formatOrderForTelegram(orderData.order_number, orderedItems);
+        await sendOrderToTelegram(user.id, telegramMessage, orderedItems);
+      } catch (telegramError) {
+        console.error('Failed to send to Telegram:', telegramError);
+        // Don't fail the order if Telegram fails
+      }
+
       setCartOpened(false);
       setOrderedItems([]);
       notifications.show({
@@ -128,6 +137,33 @@ const App: React.FC = () => {
         message: err instanceof Error ? err.message : 'Failed to create order',
         color: 'red'
       });
+    }
+  };
+
+  const formatOrderForTelegram = (orderNumber: string, items: OrderedCSVItem[]) => {
+    const itemsList = items.map(item => `• ${item.Item_name} x ${item.quantity}`).join('\n');
+    return `🛒 New Order: ${orderNumber}\n\n${itemsList}\n\nTotal Items: ${items.length}`;
+  };
+
+  const sendOrderToTelegram = async (userId: number, message: string, items: OrderedCSVItem[]) => {
+    const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`;
+    
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        type: 'order',
+        telegram_user_id: userId,
+        message: message,
+        items: items
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send order to Telegram');
     }
   };
 

@@ -163,6 +163,13 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
 
   const rows = suppliers.map((supplier) => (
     <Table.Tr key={supplier.id}>
+      <Table.Td>
+        <Switch
+          checked={supplier.active}
+          onChange={(e) => handleToggleActive(supplier, e.currentTarget.checked)}
+          size="sm"
+        />
+      </Table.Td>
       <Table.Td style={{ color: '#000' }}>{supplier.name}</Table.Td>
       <Table.Td style={{ color: '#000' }}>{supplier.contact || '-'}</Table.Td>
       <Table.Td style={{ color: '#000' }}>{supplier.groupChatId || '-'}</Table.Td>
@@ -177,13 +184,6 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
             ) : null;
           })}
         </Group>
-      </Table.Td>
-      <Table.Td>
-        <Switch
-          checked={supplier.active}
-          onChange={(e) => handleToggleActive(supplier, e.currentTarget.checked)}
-          size="sm"
-        />
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -210,11 +210,11 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
       <Table>
         <Table.Thead>
           <Table.Tr>
+            <Table.Th style={{ color: '#000' }}>Active</Table.Th>
             <Table.Th style={{ color: '#000' }}>Name</Table.Th>
             <Table.Th style={{ color: '#000' }}>Contact</Table.Th>
             <Table.Th style={{ color: '#000' }}>Group Chat ID</Table.Th>
             <Table.Th style={{ color: '#000' }}>Categories</Table.Th>
-            <Table.Th style={{ color: '#000' }}>Active</Table.Th>
             <Table.Th style={{ color: '#000' }}>Actions</Table.Th>
           </Table.Tr>
         </Table.Thead>
