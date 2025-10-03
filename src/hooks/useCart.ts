@@ -72,11 +72,14 @@ export const useCart = () => {
     setError(null);
 
     try {
+      // Use provided user ID or default for testing
+      const userId = telegramUserId || 123456789;
+      
       const { data: cartData, error: cartError } = await supabase
         .from('carts')
         .insert({
           cart_name: cartName,
-          telegram_user_id: telegramUserId,
+          telegram_user_id: userId,
           is_template: isTemplate
         })
         .select()

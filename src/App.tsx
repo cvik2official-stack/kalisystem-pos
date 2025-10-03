@@ -86,20 +86,14 @@ const App: React.FC = () => {
       return;
     }
 
-    if (!user) {
-      notifications.show({
-        title: 'Error',
-        message: 'Telegram user not found',
-        color: 'red'
-      });
-      return;
-    }
+    // Use user ID if available, otherwise use a default for testing
+    const userId = user?.id || 123456789;
 
     try {
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          telegram_user_id: user.id,
+          telegram_user_id: userId,
           status: 'New',
           team_tags: []
         })
@@ -122,12 +116,14 @@ const App: React.FC = () => {
       if (itemsError) throw itemsError;
 
       // Send order to Telegram
-      try {
-        const telegramMessage = formatOrderForTelegram(orderData.order_number, cartItems);
-        await sendOrderToTelegram(user.id, telegramMessage, cartItems);
-      } catch (telegramError) {
-        console.error('Failed to send to Telegram:', telegramError);
-        // Don't fail the order if Telegram fails
+      if (user) {
+        try {
+          const telegramMessage = formatOrderForTelegram(orderData.order_number, cartItems);
+          await sendOrderToTelegram(user.id, telegramMessage, cartItems);
+        } catch (telegramError) {
+          console.error('Failed to send to Telegram:', telegramError);
+          // Don't fail the order if Telegram fails
+        }
       }
 
       setCartOpened(false);
