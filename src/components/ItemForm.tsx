@@ -96,7 +96,7 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
     <Modal
       opened={true}
       onClose={onCancel}
-      title={item ? 'Edit Item' : 'Add New Item'}
+      title={item ? 'Edit Item' : 'Create New Item'}
       size="md"
     >
       <form onSubmit={form.onSubmit(handleFormSubmit)}>
@@ -107,6 +107,24 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
           mb="md"
         />
 
+        <Select
+          label="Category"
+          placeholder="Select a category"
+          data={categoryOptions}
+          {...form.getInputProps('category')}
+          mb="md"
+          searchable
+        />
+        
+        <Select
+          label="Default Supplier"
+          placeholder="Select a supplier"
+          data={supplierOptions}
+          {...form.getInputProps('default_supplier')}
+          mb="md"
+          searchable
+        />
+
         <Button
           variant="subtle"
           fullWidth
@@ -114,7 +132,7 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
           rightSection={showAdvanced ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
           mb="md"
         >
-          {showAdvanced ? 'Show Less' : 'Show More'}
+          {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
         </Button>
 
         <Collapse in={showAdvanced}>
@@ -123,23 +141,6 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
             placeholder="Select measure unit"
             data={measureUnits}
             {...form.getInputProps('measure_unit')}
-            mb="md"
-            searchable
-          />
-
-          <Select
-            label="Category"
-            placeholder="Select a category"
-            data={categoryOptions}
-            {...form.getInputProps('category')}
-            mb="md"
-            searchable
-          />
-          <Select
-            label="Default Supplier"
-            placeholder="Select a supplier"
-            data={supplierOptions}
-            {...form.getInputProps('default_supplier')}
             mb="md"
             searchable
           />
@@ -178,7 +179,7 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
             Cancel
           </Button>
           <Button type="submit">
-            {item ? 'Update' : 'Add'} Item
+            {item ? 'Update Item' : 'Create Item'}
           </Button>
         </Group>
       </form>
