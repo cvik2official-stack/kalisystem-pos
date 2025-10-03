@@ -1,6 +1,6 @@
 Plan: Clean Up Data Model and Remove Redundancy
 1. Database Schema Cleanup
-Remove the Team interface from TypeScript types completely
+Remove the Team interface from TypeScript types completely30
 Update User interface to keep role field and add telegramUsername field (remove team reference)
 Remove MeasureUnit interface from TypeScript types
 Create migration to drop teams table from database 
