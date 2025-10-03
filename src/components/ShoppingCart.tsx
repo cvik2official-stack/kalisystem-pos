@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Table, ActionIcon, Group, Text, Button, NumberInput, Modal } from '@mantine/core';
 import { IconPlus, IconMinus, IconTrash, IconDeviceMobile } from '@tabler/icons-react';
-import { OrderedCSVItem } from '../types';
 import { notifications } from '@mantine/notifications';
 import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
 
 interface ShoppingCartProps {
-  orderedItems: OrderedCSVItem[];
-  setOrderedItems: React.Dispatch<React.SetStateAction<OrderedCSVItem[]>>;
+  cartItems: any[];
+  updateQuantity: (itemId: string, quantity: number) => void;
+  removeItem: (itemId: string) => void;
+  clearCart: () => void;
+  totalQuantity: number;
+  itemCount: number;
   onSaveCart?: () => void;
   onPlaceOrder?: () => void;
   onClose: () => void;
   telegramUserId?: number;
 }
 
-const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedItems, onSaveCart, onPlaceOrder, onClose, telegramUserId }) => {
+const ShoppingCart: React.FC<ShoppingCartProps> = ({ 
+  cartItems, 
+  updateQuantity, 
+  removeItem, 
+  clearCart, 
+  totalQuantity, 
+  itemCount, 
+  onSaveCart, 
+  onPlaceOrder, 
+  onClose, 
+  telegramUserId 
+}) => {
   const { showMainButton, hideMainButton } = useTelegramWebApp();
   const [numpadOpened, setNumpadOpened] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [editingItemId, setEditingItemId] = useState<string>('');
   const [customQuantity, setCustomQuantity] = useState<number>(0);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -33,7 +48,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
 
   useEffect(() => {
     // Show Telegram main button when cart has items
-    if (orderedItems.length > 0 && onPlaceOrder) {
+    if (cartItems.length > 0 && onPlaceOrder) {
       showMainButton('Create Order', onPlaceOrder);
     } else {
       hideMainButton();
@@ -43,37 +58,33 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     return () => {
       hideMainButton();
     };
-  }, [orderedItems.length, onPlaceOrder, showMainButton, hideMainButton]);
-  const updateQuantity = (index: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      // Remove item if quantity is 0 or negative
-      setOrderedItems(prev => prev.filter((_, i) => i !== index));
-      notifications.show({
-        title: 'Item Removed',
-        message: 'Item removed from cart',
-        color: 'orange',
-      });
-    } else {
-      setOrderedItems(prev => 
-        prev.map((item, i) => 
-          i === index ? { ...item, quantity: newQuantity } : item
-        )
-      );
+  }, [cartItems.length, onPlaceOrder, showMainButton, hideMainButton]);
+
+  const incrementQuantity = (itemId: string) => {
+    const item = cartItems.find(i => i.id === itemId);
+    if (item) {
+      updateQuantity(itemId, item.quantity + 1);
     }
   };
 
-  const incrementQuantity = (index: number) => {
-    const currentQuantity = orderedItems[index].quantity;
-    updateQuantity(index, currentQuantity + 1);
+  const decrementQuantity = (itemId: string) => {
+    const item = cartItems.find(i => i.id === itemId);
+    if (item) {
+      if (item.quantity <= 1) {
+        removeItem(itemId);
+        notifications.show({
+          title: 'Item Removed',
+          message: 'Item removed from cart',
+          color: 'orange',
+        });
+      } else {
+        updateQuantity(itemId, item.quantity - 1);
+      }
+    }
   };
 
-  const decrementQuantity = (index: number) => {
-    const currentQuantity = orderedItems[index].quantity;
-    updateQuantity(index, Math.max(0, currentQuantity - 1));
-  };
-
-  const removeItem = (index: number) => {
-    setOrderedItems(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveItem = (itemId: string) => {
+    removeItem(itemId);
     notifications.show({
       title: 'Item Removed',
       message: 'Item removed from cart',
@@ -81,22 +92,22 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     });
   };
 
-  const openNumpad = (index: number) => {
-    setEditingIndex(index);
-    setCustomQuantity(orderedItems[index].quantity);
+  const openNumpad = (itemId: string, currentQuantity: number) => {
+    setEditingItemId(itemId);
+    setCustomQuantity(currentQuantity);
     setNumpadOpened(true);
   };
 
   const applyCustomQuantity = () => {
-    if (editingIndex >= 0) {
-      updateQuantity(editingIndex, customQuantity);
+    if (editingItemId) {
+      updateQuantity(editingItemId, customQuantity);
     }
     setNumpadOpened(false);
-    setEditingIndex(-1);
+    setEditingItemId('');
   };
 
   const resetCart = () => {
-    setOrderedItems([]);
+    clearCart();
     notifications.show({
       title: 'Cart Reset',
       message: 'All items removed from cart',
@@ -104,11 +115,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     });
   };
 
-  const getTotalItems = () => {
-    return orderedItems.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  if (orderedItems.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
         <Text size="lg" c="dimmed" mb="md">Your cart is empty</Text>
@@ -117,8 +124,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     );
   }
 
-  const rows = orderedItems.map((item, index) => (
-    <Table.Tr key={index} style={{ height: isMobile ? '36px' : '48px' }}>
+  const rows = cartItems.map((item) => (
+    <Table.Tr key={item.id} style={{ height: isMobile ? '36px' : '48px' }}>
       <Table.Td>
         <Text style={{ 
           color: '#000', 
@@ -130,7 +137,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
           textOverflow: 'ellipsis',
           maxWidth: isMobile ? '120px' : '200px'
         }}>
-          {item.Item_name}
+          {item.item_name}
         </Text>
       </Table.Td>
       <Table.Td>
@@ -139,7 +146,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
             variant="light"
             color="red"
             size={isMobile ? "xs" : "sm"}
-            onClick={() => decrementQuantity(index)}
+            onClick={() => decrementQuantity(item.id)}
           >
             <IconMinus size={isMobile ? 12 : 14} />
           </ActionIcon>
@@ -147,7 +154,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
           <Button
             variant="light"
             size={isMobile ? "xs" : "sm"}
-            onClick={() => openNumpad(index)}
+            onClick={() => openNumpad(item.id, item.quantity)}
             style={{ 
               minWidth: isMobile ? '45px' : '60px',
               fontSize: isMobile ? '10px' : '12px',
@@ -161,7 +168,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
             variant="light"
             color="blue"
             size={isMobile ? "xs" : "sm"}
-            onClick={() => incrementQuantity(index)}
+            onClick={() => incrementQuantity(item.id)}
           >
             <IconPlus size={isMobile ? 12 : 14} />
           </ActionIcon>
@@ -172,7 +179,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
           variant="light"
           color="red"
           size={isMobile ? "xs" : "sm"}
-          onClick={() => removeItem(index)}
+          onClick={() => handleRemoveItem(item.id)}
         >
           <IconTrash size={isMobile ? 14 : 16} />
         </ActionIcon>
@@ -184,7 +191,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
     <>
       <div style={{ marginBottom: '16px' }}>
         <Text size="sm" c="dimmed">
-          {orderedItems.length} items • Total quantity: {getTotalItems().toFixed(2)}
+          {itemCount} items • Total quantity: {totalQuantity.toFixed(2)}
         </Text>
       </div>
 
@@ -212,7 +219,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
             <Button
               variant="outline"
               onClick={onSaveCart}
-              disabled={orderedItems.length === 0}
+              disabled={cartItems.length === 0}
             >
               Save Cart
             </Button>
@@ -220,7 +227,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ orderedItems, setOrderedIte
           {onPlaceOrder && (
             <Button
               onClick={onPlaceOrder}
-              disabled={orderedItems.length === 0}
+              disabled={cartItems.length === 0}
             >
               Place Order
             </Button>

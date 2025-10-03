@@ -20,7 +20,8 @@ import CSVImport from './CSVImport';
 import GoogleSheetsSync from './GoogleSheetsSync';
 
 interface SideMenuProps {
-  orderedItems: OrderedCSVItem[];
+  cartItems: any[];
+  itemCount: number;
   currentPage: string;
   onNavigation: (page: string) => void;
   onCreateOrder: () => void;
@@ -29,7 +30,8 @@ interface SideMenuProps {
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({
-  orderedItems,
+  cartItems,
+  itemCount,
   currentPage,
   onNavigation,
   onCreateOrder,
@@ -106,9 +108,9 @@ const SideMenu: React.FC<SideMenuProps> = ({
             variant="filled"
             color="blue"
             rightSection={
-              orderedItems.length > 0 && (
+              itemCount > 0 && (
                 <Badge size="sm" color="white" c="blue">
-                  {orderedItems.length}
+                  {itemCount}
                 </Badge>
               )
             }

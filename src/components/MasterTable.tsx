@@ -10,8 +10,8 @@ import CategoryFilter from './CategoryFilter';
 interface MasterTableProps {
   colorScheme: 'light' | 'dark';
   toggleColorScheme: () => void;
-  orderedItems: OrderedCSVItem[];
-  setOrderedItems: React.Dispatch<React.SetStateAction<OrderedCSVItem[]>>;
+  cartItems: any[];
+  addItem: (item: any) => void;
   items: any[];
   loading: boolean;
   error: string | null;
@@ -21,8 +21,8 @@ interface MasterTableProps {
 const MasterTable: React.FC<MasterTableProps> = ({
   colorScheme,
   toggleColorScheme,
-  orderedItems,
-  setOrderedItems,
+  cartItems,
+  addItem,
   items,
   loading,
   error,
@@ -227,26 +227,24 @@ const MasterTable: React.FC<MasterTableProps> = ({
       const itemToAdd = exactMatch || filteredItems[0];
 
       if (itemToAdd) {
-        // Add first filtered item to order with quantity 1
-        const orderItem: OrderedCSVItem = {
-          ...itemToAdd,
+        // Add item to cart with quantity 1
+        addItem({
+          item_name: itemToAdd.Item_name,
+          category: itemToAdd.category,
           quantity: 1
-        };
-        setOrderedItems(prev => [...prev, orderItem]);
+        });
         notifications.show({
           title: 'Item Added to Order',
           message: `"${itemToAdd.Item_name}" added with quantity 1`,
           color: 'green',
         });
       } else if (searchQuery.trim()) {
-        // Create new item with search query
-        const newItem: OrderedCSVItem = {
-          Item_name: searchQuery.trim(),
+        // Create new item and add to cart
+        addItem({
+          item_name: searchQuery.trim(),
           category: 'New Item',
-          default_supplier: 'Unknown',
           quantity: 1
-        };
-        setOrderedItems(prev => [...prev, newItem]);
+        });
         notifications.show({
           title: 'New Item Created',
           message: `"${searchQuery.trim()}" created and added to order`,
@@ -264,11 +262,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
       );
 
       const itemToAdd = exactMatch || filteredItems[0];
-      const orderItem: OrderedCSVItem = {
-        ...itemToAdd,
+      addItem({
+        item_name: itemToAdd.Item_name,
+        category: itemToAdd.category,
         quantity
-      };
-      setOrderedItems(prev => [...prev, orderItem]);
+      });
       notifications.show({
         title: 'Item Added to Order',
         message: `"${itemToAdd.Item_name}" added with quantity ${quantity}`,
@@ -279,7 +277,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
   };
 
   const handleSaveCartWithName = (cartName: string) => {
-    if (orderedItems.length === 0) {
+    if (cartItems.length === 0) {
       notifications.show({
         title: 'Empty Cart',
         message: 'Cannot save an empty cart',
@@ -297,7 +295,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
   };
 
   const handleCreateOrder = () => {
-    if (orderedItems.length === 0) {
+    if (cartItems.length === 0) {
       notifications.show({
         title: 'Empty Cart',
         message: 'Add items to cart before creating an order',
@@ -309,7 +307,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
     // TODO: Implement actual order creation
     notifications.show({
       title: 'Order Created',
-      message: `Order created with ${orderedItems.length} items`,
+      message: `Order created with ${cartItems.length} items`,
       color: 'green',
     });
   };
@@ -319,7 +317,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
     if (value === '💾 Save cart') {
       setSearchQuery('');
       setSearchFocused(false);
-      if (orderedItems.length === 0) {
+      if (cartItems.length === 0) {
         notifications.show({
           title: 'Empty Cart',
           message: 'Add items to cart before saving',
@@ -360,11 +358,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
     );
 
     if (selectedItem) {
-      const orderItem: OrderedCSVItem = {
-        ...selectedItem,
+      addItem({
+        item_name: selectedItem.Item_name,
+        category: selectedItem.category,
         quantity: 1
-      };
-      setOrderedItems(prev => [...prev, orderItem]);
+      });
       notifications.show({
         title: 'Item Added to Order',
         message: `"${selectedItem.Item_name}" added with quantity 1`,
@@ -425,11 +423,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
 
   const handleAddItemToOrder = (item: any, index: number) => {
     const quantity = rowQuantities.get(index) || 1;
-    const orderItem: OrderedCSVItem = {
-      ...item,
+    addItem({
+      item_name: item.Item_name,
+      category: item.category,
       quantity
-    };
-    setOrderedItems(prev => [...prev, orderItem]);
+    });
     notifications.show({
       title: 'Item Added',
       message: `"${item.Item_name}" added with quantity ${quantity}`,
@@ -458,11 +456,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
   const handleRowClick = (item: any, index: number) => {
     if (multiselectMode || showActions) return;
 
-    const orderItem: OrderedCSVItem = {
-      ...item,
+    addItem({
+      item_name: item.Item_name,
+      category: item.category,
       quantity: 1
-    };
-    setOrderedItems(prev => [...prev, orderItem]);
+    });
     notifications.show({
       title: 'Item Added',
       message: `"${item.Item_name}" added to cart with quantity 1`,
@@ -491,11 +489,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
 
   const handleCustomQuantitySubmit = () => {
     if (longPressItem && customQuantity > 0) {
-      const orderItem: OrderedCSVItem = {
-        ...longPressItem.item,
+      addItem({
+        item_name: longPressItem.item.Item_name,
+        category: longPressItem.item.category,
         quantity: customQuantity
-      };
-      setOrderedItems(prev => [...prev, orderItem]);
+      });
       notifications.show({
         title: 'Item Added',
         message: `"${longPressItem.item.Item_name}" added to cart with quantity ${customQuantity}`,
@@ -1002,8 +1000,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
         <CategoryGroupView
           items={filteredItems}
           onAddToOrder={(item, quantity = 1) => {
-            const orderItem: OrderedCSVItem = { ...item, quantity };
-            setOrderedItems(prev => [...prev, orderItem]);
+            addItem({
+              item_name: item.Item_name,
+              category: item.category,
+              quantity
+            });
             notifications.show({
               title: 'Item Added to Order',
               message: `"${item.Item_name}" added with quantity ${quantity}`,

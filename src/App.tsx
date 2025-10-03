@@ -8,28 +8,28 @@ import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
 import '@mantine/dropzone/styles.css';
 import { useItems } from './hooks/useItems';
+import { useCart } from './hooks/useCart';
 import { useTelegramWebApp } from './hooks/useTelegramWebApp';
-import { OrderedCSVItem } from './types';
 import SideMenu from './components/SideMenu';
 import MasterTable from './components/MasterTable';
 import ShoppingCart from './components/ShoppingCart';
 import OrderTable from './components/OrderTable';
 import CartManagement from './components/CartManagement';
 import TagManagement from './components/TagManagement/TagManagement';
-import { exportToCSV } from './utils/csvExport';
 import { notifications } from '@mantine/notifications';
 import { supabase } from './lib/supabase';
+import Papa from 'papaparse';
 
 const App: React.FC = () => {
   const [opened, { toggle }] = useDisclosure();
   const [cartOpened, setCartOpened] = useState(false);
   const [saveCartModalOpened, setSaveCartModalOpened] = useState(false);
   const [cartName, setCartName] = useState('');
-  const [orderedItems, setOrderedItems] = useState<OrderedCSVItem[]>([]);
   const [currentPage, setCurrentPage] = useState('items');
   const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('light');
 
   const { items, loading, error, refetch } = useItems();
+  const { items: cartItems, addItem, updateQuantity, removeItem, clearCart, saveCart, totalQuantity, itemCount } = useCart();
   const { user, isReady } = useTelegramWebApp();
 
   const toggleColorScheme = () => {
@@ -54,20 +54,30 @@ const App: React.FC = () => {
       return;
     }
 
-    // TODO: Implement actual cart save to database with custom name
-    // The cart name is for backend reference only, not displayed when creating orders
+    if (!user) {
+      notifications.show({
+        title: 'Error',
+        message: 'Telegram user not found',
+        color: 'red'
+      });
+      return;
+    }
+
+    const cartId = await saveCart(cartName, user.id, false);
+    if (cartId) {
+      notifications.show({
+        title: 'Cart Saved',
+        message: `Cart "${cartName}" saved successfully`,
+        color: 'green'
+      });
+    }
 
     setSaveCartModalOpened(false);
     setCartName('');
-    notifications.show({
-      title: 'Cart Saved',
-      message: `Cart "${cartName}" saved successfully`,
-      color: 'green'
-    });
   };
 
   const handlePlaceOrder = async () => {
-    if (orderedItems.length === 0) {
+    if (cartItems.length === 0) {
       notifications.show({
         title: 'Empty Cart',
         message: 'Add items to cart before placing an order',
@@ -101,9 +111,9 @@ const App: React.FC = () => {
 
       if (orderError) throw orderError;
 
-      const orderItems = orderedItems.map(item => ({
+      const orderItems = cartItems.map(item => ({
         order_id: orderData.id,
-        item_name: item.Item_name,
+        item_name: item.item_name,
         quantity: item.quantity,
         category: item.category || null
       }));
@@ -116,18 +126,18 @@ const App: React.FC = () => {
 
       // Send order to Telegram
       try {
-        const telegramMessage = formatOrderForTelegram(orderData.order_number, orderedItems);
-        await sendOrderToTelegram(user.id, telegramMessage, orderedItems);
+        const telegramMessage = formatOrderForTelegram(orderData.order_number, cartItems);
+        await sendOrderToTelegram(user.id, telegramMessage, cartItems);
       } catch (telegramError) {
         console.error('Failed to send to Telegram:', telegramError);
         // Don't fail the order if Telegram fails
       }
 
       setCartOpened(false);
-      setOrderedItems([]);
+      clearCart();
       notifications.show({
         title: 'Order Created',
-        message: `Order ${orderNumber} placed successfully with ${orderedItems.length} items`,
+        message: `Order ${orderNumber} placed successfully with ${cartItems.length} items`,
         color: 'green'
       });
     } catch (err) {
@@ -140,12 +150,12 @@ const App: React.FC = () => {
     }
   };
 
-  const formatOrderForTelegram = (orderNumber: string, items: OrderedCSVItem[]) => {
-    const itemsList = items.map(item => `• ${item.Item_name} x ${item.quantity}`).join('\n');
+  const formatOrderForTelegram = (orderNumber: string, items: any[]) => {
+    const itemsList = items.map(item => `• ${item.item_name} x ${item.quantity}`).join('\n');
     return `🛒 New Order: ${orderNumber}\n\n${itemsList}\n\nTotal Items: ${items.length}`;
   };
 
-  const sendOrderToTelegram = async (userId: number, message: string, items: OrderedCSVItem[]) => {
+  const sendOrderToTelegram = async (userId: number, message: string, items: any[]) => {
     const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`;
     
     const response = await fetch(webhookUrl, {
@@ -168,7 +178,7 @@ const App: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (orderedItems.length === 0) {
+    if (cartItems.length === 0) {
       notifications.show({
         title: 'No Items',
         message: 'Add items to cart before exporting',
@@ -177,10 +187,34 @@ const App: React.FC = () => {
       return;
     }
 
-    exportToCSV(orderedItems);
+    // Convert cart items to CSV format
+    const csvData = cartItems.map(item => ({
+      Item_name: item.item_name,
+      category: item.category || '',
+      quantity: item.quantity
+    }));
+
+    const csv = Papa.unparse(csvData, {
+      header: true,
+      columns: ['Item_name', 'category', 'quantity']
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `cart-${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     notifications.show({
       title: 'Export Successful',
-      message: `Exported ${orderedItems.length} items`,
+      message: `Exported ${cartItems.length} items`,
       color: 'green',
     });
   };
@@ -192,8 +226,8 @@ const App: React.FC = () => {
           <MasterTable
             colorScheme={colorScheme}
             toggleColorScheme={toggleColorScheme}
-            orderedItems={orderedItems}
-            setOrderedItems={setOrderedItems}
+            cartItems={cartItems}
+            addItem={addItem}
             items={items}
             loading={loading}
             error={error}
@@ -227,8 +261,8 @@ const App: React.FC = () => {
           <MasterTable
             colorScheme={colorScheme}
             toggleColorScheme={toggleColorScheme}
-            orderedItems={orderedItems}
-            setOrderedItems={setOrderedItems}
+            cartItems={cartItems}
+            addItem={addItem}
             items={items}
             loading={loading}
             error={error}
@@ -262,7 +296,8 @@ const App: React.FC = () => {
 
           <AppShell.Navbar p="md">
             <SideMenu
-              orderedItems={orderedItems}
+              cartItems={cartItems}
+              itemCount={itemCount}
               currentPage={currentPage}
               onNavigation={setCurrentPage}
               onCreateOrder={handleCreateOrder}
@@ -282,8 +317,12 @@ const App: React.FC = () => {
           size="lg"
         >
           <ShoppingCart
-            orderedItems={orderedItems}
-            setOrderedItems={setOrderedItems}
+            cartItems={cartItems}
+            updateQuantity={updateQuantity}
+            removeItem={removeItem}
+            clearCart={clearCart}
+            totalQuantity={totalQuantity}
+            itemCount={itemCount}
             onSaveCart={handleSaveCart}
             onPlaceOrder={handlePlaceOrder}
             onClose={() => setCartOpened(false)}
