@@ -1,4 +1,4 @@
-import { User, Team, Supplier, Category, MeasureUnit } from '../types';
+import { User, Team, Supplier, Category } from '../types';
 
 export const defaultUsers: User[] = [
   { id: '1', name: 'Admin User', role: 'admin', color: '#e74c3c', active: true },
@@ -47,20 +47,3 @@ export const defaultCategories: Category[] = [
   { id: '15', name: 'Cheese', color: '#eab308', icon: '🧀', level: 'category', parentId: '9', order: 1 },
 ];
 
-export const defaultMeasureUnits: MeasureUnit[] = [
-  // Weight
-  { id: '1', name: 'Kilogram', symbol: 'kg', type: 'weight' },
-  { id: '2', name: 'Gram', symbol: 'g', type: 'weight', baseUnit: 'kg', conversionFactor: 0.001 },
-  { id: '3', name: 'Pound', symbol: 'lb', type: 'weight', baseUnit: 'kg', conversionFactor: 0.453592 },
-  
-  // Volume
-  { id: '4', name: 'Liter', symbol: 'L', type: 'volume' },
-  { id: '5', name: 'Milliliter', symbol: 'ml', type: 'volume', baseUnit: 'L', conversionFactor: 0.001 },
-  { id: '6', name: 'Gallon', symbol: 'gal', type: 'volume', baseUnit: 'L', conversionFactor: 3.78541 },
-  
-  // Count
-  { id: '7', name: 'Piece', symbol: 'pcs', type: 'count' },
-  { id: '8', name: 'Pack', symbol: 'pack', type: 'count' },
-  { id: '9', name: 'Box', symbol: 'box', type: 'count' },
-  { id: '10', name: 'Dozen', symbol: 'dz', type: 'count', baseUnit: 'pcs', conversionFactor: 12 },
-];

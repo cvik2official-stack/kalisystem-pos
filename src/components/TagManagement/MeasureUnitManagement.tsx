@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Group, Button, Badge, ActionIcon, Modal, TextInput, Stack, Text } from '@mantine/core';
 import { IconEdit, IconTrash, IconPlus, IconX } from '@tabler/icons-react';
-import { MeasureUnit } from '../../types';
 import { supabase } from '../../lib/supabase';
 
+interface MeasureUnitTag {
+  id: string;
+  name: string;
+  color: string;
+  metadata?: {
+    full_name?: string;
+    type?: string;
+    base_unit?: string;
+    conversion_factor?: number;
+  };
+}
+
 const MeasureUnitManagement: React.FC = () => {
-  const [measureUnits, setMeasureUnits] = useState<MeasureUnit[]>([]);
+  const [measureUnits, setMeasureUnits] = useState<MeasureUnitTag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [opened, setOpened] = useState(false);
+  const [editingUnit, setEditingUnit] = useState<MeasureUnitTag | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    symbol: '',
+  });
 
   useEffect(() => {
     fetchMeasureUnits();
@@ -14,20 +31,33 @@ const MeasureUnitManagement: React.FC = () => {
 
   const fetchMeasureUnits = async () => {
     try {
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('tag_categories')
+        .select('id')
+        .eq('name', 'measure_unit')
+        .maybeSingle();
+
+      if (categoryError) throw categoryError;
+
+      if (!categoryData) {
+        console.error('measure_unit category not found');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('measure_units')
+        .from('tags')
         .select('*')
+        .eq('category_id', categoryData.id)
         .order('name', { ascending: true });
 
       if (error) throw error;
 
-      const mapped: MeasureUnit[] = (data || []).map(unit => ({
-        id: unit.id,
-        name: unit.name,
-        symbol: unit.symbol,
-        type: unit.type,
-        baseUnit: unit.base_unit,
-        conversionFactor: unit.conversion_factor
+      const mapped: MeasureUnitTag[] = (data || []).map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+        metadata: tag.metadata || {}
       }));
 
       setMeasureUnits(mapped);
@@ -38,47 +68,80 @@ const MeasureUnitManagement: React.FC = () => {
     }
   };
 
-  const onUpdate = async (units: MeasureUnit[]) => {
-    setMeasureUnits(units);
-    await fetchMeasureUnits();
-  };
-  const [opened, setOpened] = useState(false);
-  const [editingUnit, setEditingUnit] = useState<MeasureUnit | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    symbol: '',
-  });
+  const handleSubmit = async () => {
+    try {
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('tag_categories')
+        .select('id')
+        .eq('name', 'measure_unit')
+        .maybeSingle();
 
-  const handleSubmit = () => {
-    if (editingUnit) {
-      const updatedUnits = measureUnits.map(unit =>
-        unit.id === editingUnit.id ? { ...unit, name: formData.name, symbol: formData.symbol } : unit
-      );
-      onUpdate(updatedUnits);
-    } else {
-      const newUnit: MeasureUnit = {
-        id: Date.now().toString(),
-        name: formData.name,
-        symbol: formData.symbol,
-        type: 'count',
-      };
-      onUpdate([...measureUnits, newUnit]);
+      if (categoryError) throw categoryError;
+
+      if (!categoryData) {
+        console.error('measure_unit category not found');
+        return;
+      }
+
+      if (editingUnit) {
+        const { error } = await supabase
+          .from('tags')
+          .update({
+            name: formData.symbol,
+            metadata: {
+              ...(editingUnit.metadata || {}),
+              full_name: formData.name
+            }
+          })
+          .eq('id', editingUnit.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('tags')
+          .insert({
+            name: formData.symbol,
+            color: '#3498db',
+            category_id: categoryData.id,
+            metadata: {
+              full_name: formData.name,
+              type: 'count'
+            }
+          });
+
+        if (error) throw error;
+      }
+
+      await fetchMeasureUnits();
+      setOpened(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error saving measure unit:', error);
     }
-    setOpened(false);
-    resetForm();
   };
 
-  const handleEdit = (unit: MeasureUnit) => {
+  const handleEdit = (unit: MeasureUnitTag) => {
     setEditingUnit(unit);
     setFormData({
-      name: unit.name,
-      symbol: unit.symbol,
+      name: unit.metadata?.full_name || unit.name,
+      symbol: unit.name,
     });
     setOpened(true);
   };
 
-  const handleDelete = (unitId: string) => {
-    onUpdate(measureUnits.filter(unit => unit.id !== unitId));
+  const handleDelete = async (unitId: string) => {
+    try {
+      const { error } = await supabase
+        .from('tags')
+        .delete()
+        .eq('id', unitId);
+
+      if (error) throw error;
+
+      await fetchMeasureUnits();
+    } catch (error) {
+      console.error('Error deleting measure unit:', error);
+    }
   };
 
   const resetForm = () => {
@@ -130,7 +193,7 @@ const MeasureUnitManagement: React.FC = () => {
               </Group>
             }
           >
-            {unit.symbol}
+            {unit.name}
           </Badge>
         ))}
       </Group>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, TextInput, Select, Button, Group, Collapse } from '@mantine/core';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useTagManagement } from '../hooks/useTagManagement';
+import { supabase } from '../lib/supabase';
 
 interface ItemFormProps {
   item?: any;
@@ -13,7 +14,8 @@ interface ItemFormProps {
 const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
   const { tagData } = useTagManagement();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  
+  const [measureUnits, setMeasureUnits] = useState<Array<{ value: string; label: string }>>([]);
+
   const form = useForm({
     initialValues: {
       Item_name: item?.Item_name || '',
@@ -29,6 +31,44 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
       Item_name: (value) => (!value ? 'Item name is required' : null),
     },
   });
+
+  useEffect(() => {
+    fetchMeasureUnits();
+  }, []);
+
+  const fetchMeasureUnits = async () => {
+    try {
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('tag_categories')
+        .select('id')
+        .eq('name', 'measure_unit')
+        .maybeSingle();
+
+      if (categoryError) throw categoryError;
+
+      if (!categoryData) {
+        console.error('measure_unit category not found');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('tags')
+        .select('*')
+        .eq('category_id', categoryData.id)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+
+      const options = (data || []).map(tag => ({
+        value: tag.name,
+        label: tag.metadata?.full_name ? `${tag.metadata.full_name} (${tag.name})` : tag.name
+      }));
+
+      setMeasureUnits(options);
+    } catch (error) {
+      console.error('Error fetching measure units:', error);
+    }
+  };
 
   const handleFormSubmit = (values: any) => {
     const submitData = {
@@ -51,11 +91,6 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
       value: supplier.name,
       label: supplier.name
     }));
-
-  const unitOptions = tagData.measureUnits.map(unit => ({
-    value: unit.symbol,
-    label: `${unit.name} (${unit.symbol})`
-  }));
 
   return (
     <Modal
@@ -86,7 +121,7 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
           <Select
             label="Measure Unit"
             placeholder="Select measure unit"
-            data={unitOptions}
+            data={measureUnits}
             {...form.getInputProps('measure_unit')}
             mb="md"
             searchable

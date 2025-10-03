@@ -77,5 +77,4 @@ export interface TagManagement {
   teams: Team[];
   suppliers: Supplier[];
   categories: Category[];
-  measureUnits: MeasureUnit[];
 }
