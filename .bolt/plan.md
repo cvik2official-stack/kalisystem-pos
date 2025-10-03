@@ -94,3 +94,23 @@ Have you deployed these functions to Bolt Database already, or are they just sit
 Do you have access to your actual Bolt Database dashboard to check function logs?
 Should I focus on fixing the code first, or do you need help setting up the webhook URL?
 The telegram-webhook function code has serious syntax issues that need to be fixed before it can work properly
+
+📅 [Date] [Month]. [Time]
+#️⃣ [Order Number]
+📌 [Team Tags] or "Not set"
+🚚 [Delivery Type] or "Not set"  
+💲 [Payment Method] or "Not set"
+
+🔄 [Status]
+☑️ Supplier - [X]/[Y] tasks
+  📊 Confirm item availability
+  💲 Set order amount
+  📄 Attach invoice
+
+💰 Amount: $[Amount]
+📄 Invoice attached
+
+📦 Items:
+🔹 [Item Name] x [Quantity]
+✅ [Confirmed Item] x [Quantity]
+🔸 [Unavailable Item] x [Quantity]
