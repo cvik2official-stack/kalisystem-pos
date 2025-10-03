@@ -690,15 +690,6 @@ const MasterTable: React.FC<MasterTableProps> = ({
 
       <Modal opened={filterOpened} onClose={() => setFilterOpened(false)} title="Filter Items">
         <Select
-          label="Category"
-          placeholder="Select category"
-          value={selectedCategory}
-          onChange={(value) => setSelectedCategory(value || '')}
-          data={uniqueCategories.map(cat => ({ value: cat, label: cat }))}
-          clearable
-          mb="md"
-        />
-        <Select
           label="Supplier"
           placeholder="Select supplier"
           value={selectedSupplier}
