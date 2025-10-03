@@ -2,46 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Table, Badge, Button, Group, ActionIcon, Modal, TextInput, Select, Switch, ColorInput } from '@mantine/core';
 import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
 import { User } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { useTagManagement } from '../../hooks/useTagManagement';
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { tagData, updateUsers, addUser } = useTagManagement();
+  const users = tagData.users;
+  const loading = false;
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-
-      const mapped: User[] = (data || []).map(profile => ({
-        id: profile.id,
-        name: profile.name,
-        role: profile.role,
-        team: profile.team_id,
-        color: profile.color,
-        active: profile.active
-      }));
-
-      setUsers(mapped);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onUpdate = async (updatedUsers: User[]) => {
-    setUsers(updatedUsers);
-    await fetchUsers();
-  };
   const [opened, setOpened] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -57,13 +24,13 @@ const UserManagement: React.FC = () => {
       const updatedUsers = users.map(user =>
         user.id === editingUser.id ? { ...user, ...formData } : user
       );
-      onUpdate(updatedUsers);
+      updateUsers(updatedUsers);
     } else {
       const newUser: User = {
         id: Date.now().toString(),
         ...formData,
       };
-      onUpdate([...users, newUser]);
+      addUser(newUser);
     }
     setOpened(false);
     resetForm();
@@ -82,7 +49,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleDelete = (userId: string) => {
-    onUpdate(users.filter(user => user.id !== userId));
+    updateUsers(users.filter(user => user.id !== userId));
   };
 
   const resetForm = () => {
