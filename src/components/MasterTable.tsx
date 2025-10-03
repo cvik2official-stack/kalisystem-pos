@@ -42,6 +42,10 @@ const MasterTable: React.FC<MasterTableProps> = ({
   const [multiselectMode, setMultiselectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [rowQuantities, setRowQuantities] = useState<Map<number, number>>(new Map());
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [longPressItem, setLongPressItem] = useState<{item: any, index: number} | null>(null);
+  const [numpadModalOpened, setNumpadModalOpened] = useState(false);
+  const [customQuantity, setCustomQuantity] = useState<number>(1);
   const [visibleColumns, setVisibleColumns] = useState({
     itemName: true,
     category: true,
@@ -451,6 +455,58 @@ const MasterTable: React.FC<MasterTableProps> = ({
     });
   };
 
+  const handleRowClick = (item: any, index: number) => {
+    if (multiselectMode || showActions) return;
+
+    const orderItem: OrderedCSVItem = {
+      ...item,
+      quantity: 1
+    };
+    setOrderedItems(prev => [...prev, orderItem]);
+    notifications.show({
+      title: 'Item Added',
+      message: `"${item.Item_name}" added to cart with quantity 1`,
+      color: 'green',
+    });
+  };
+
+  const handleRowLongPressStart = (item: any, index: number, event: React.MouseEvent | React.TouchEvent) => {
+    if (multiselectMode || showActions) return;
+
+    event.preventDefault();
+    const timer = setTimeout(() => {
+      setLongPressItem({item, index});
+      setCustomQuantity(1);
+      setNumpadModalOpened(true);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
+  const handleRowLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleCustomQuantitySubmit = () => {
+    if (longPressItem && customQuantity > 0) {
+      const orderItem: OrderedCSVItem = {
+        ...longPressItem.item,
+        quantity: customQuantity
+      };
+      setOrderedItems(prev => [...prev, orderItem]);
+      notifications.show({
+        title: 'Item Added',
+        message: `"${longPressItem.item.Item_name}" added to cart with quantity ${customQuantity}`,
+        color: 'green',
+      });
+    }
+    setNumpadModalOpened(false);
+    setLongPressItem(null);
+    setCustomQuantity(1);
+  };
+
   if (error) {
     return (
       <Paper p="md">
@@ -462,7 +518,20 @@ const MasterTable: React.FC<MasterTableProps> = ({
   }
 
   const rows = filteredItems.map((item, index) => (
-    <Table.Tr key={index} style={{ height: '40px', backgroundColor: selectedItems.has(index) ? '#e7f5ff' : 'white' }}>
+    <Table.Tr
+      key={index}
+      style={{
+        height: '40px',
+        backgroundColor: selectedItems.has(index) ? '#e7f5ff' : 'white',
+        cursor: (!multiselectMode && !showActions) ? 'pointer' : 'default'
+      }}
+      onClick={() => handleRowClick(item, index)}
+      onMouseDown={(e) => handleRowLongPressStart(item, index, e)}
+      onMouseUp={handleRowLongPressEnd}
+      onMouseLeave={handleRowLongPressEnd}
+      onTouchStart={(e) => handleRowLongPressStart(item, index, e)}
+      onTouchEnd={handleRowLongPressEnd}
+    >
       {multiselectMode && (
         <Table.Td>
           <Checkbox
@@ -943,6 +1012,40 @@ const MasterTable: React.FC<MasterTableProps> = ({
           }}
         />
       )}
+
+      <Modal
+        opened={numpadModalOpened}
+        onClose={() => {
+          setNumpadModalOpened(false);
+          setLongPressItem(null);
+          setCustomQuantity(1);
+        }}
+        title="Set Custom Quantity"
+        size="sm"
+        centered
+      >
+        <NumberInput
+          label="Quantity"
+          value={customQuantity}
+          onChange={(val) => setCustomQuantity(typeof val === 'number' ? val : 1)}
+          min={1}
+          max={9999}
+          step={1}
+          mb="md"
+        />
+        <Group justify="flex-end">
+          <Button variant="outline" onClick={() => {
+            setNumpadModalOpened(false);
+            setLongPressItem(null);
+            setCustomQuantity(1);
+          }}>
+            Cancel
+          </Button>
+          <Button onClick={handleCustomQuantitySubmit}>
+            Add to Cart
+          </Button>
+        </Group>
+      </Modal>
     </Paper>
   );
 };

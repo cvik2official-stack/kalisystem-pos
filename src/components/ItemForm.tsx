@@ -12,7 +12,7 @@ interface ItemFormProps {
 
 const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
   const { tagData } = useTagManagement();
-  const [showAdvanced, setShowAdvanced] = useState(!!item);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
   const form = useForm({
     initialValues: {
@@ -31,7 +31,11 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
   });
 
   const handleFormSubmit = (values: any) => {
-    onSubmit(values);
+    const submitData = {
+      ...values,
+      category: values.category || 'new',
+    };
+    onSubmit(submitData);
   };
 
   const categoryOptions = tagData.categories
@@ -68,24 +72,6 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
           mb="md"
         />
 
-        <Select
-          label="Measure Unit"
-          placeholder="Select measure unit"
-          data={unitOptions}
-          {...form.getInputProps('measure_unit')}
-          mb="md"
-          searchable
-        />
-
-        <Select
-          label="Category"
-          placeholder="Select a category"
-          data={categoryOptions}
-          {...form.getInputProps('category')}
-          mb="md"
-          searchable
-        />
-
         <Button
           variant="subtle"
           fullWidth
@@ -97,6 +83,23 @@ const ItemForm: React.FC<ItemFormProps> = ({ item, onSubmit, onCancel }) => {
         </Button>
 
         <Collapse in={showAdvanced}>
+          <Select
+            label="Measure Unit"
+            placeholder="Select measure unit"
+            data={unitOptions}
+            {...form.getInputProps('measure_unit')}
+            mb="md"
+            searchable
+          />
+
+          <Select
+            label="Category"
+            placeholder="Select a category"
+            data={categoryOptions}
+            {...form.getInputProps('category')}
+            mb="md"
+            searchable
+          />
           <Select
             label="Default Supplier"
             placeholder="Select a supplier"

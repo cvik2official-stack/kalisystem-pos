@@ -24,11 +24,16 @@ export const useSuppliers = () => {
       const mappedSuppliers: Supplier[] = (data || []).map(sup => ({
         id: sup.id,
         name: sup.name,
-        contact: sup.contact || undefined,
-        email: sup.email || undefined,
-        color: sup.color,
-        active: sup.active,
-        categories: sup.categories || undefined
+        contact: sup.supplier_contact || undefined,
+        email: undefined,
+        color: '#3498db',
+        active: sup.active ?? true,
+        categories: sup.categories || undefined,
+        groupChatId: sup.group_chat_id,
+        location: sup.location,
+        qrCode: sup.qr_code,
+        priceList: sup.price_list,
+        tags: sup.tags || []
       }));
 
       setSuppliers(mappedSuppliers);

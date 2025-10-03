@@ -45,6 +45,11 @@ export interface Supplier {
   color: string;
   active: boolean;
   categories?: string[];
+  groupChatId?: number;
+  location?: string;
+  qrCode?: string;
+  priceList?: string;
+  tags?: string[];
 }
 
 export interface MeasureUnit {

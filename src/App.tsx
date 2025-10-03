@@ -18,6 +18,7 @@ import CartManagement from './components/CartManagement';
 import TagManagement from './components/TagManagement/TagManagement';
 import { exportToCSV } from './utils/csvExport';
 import { notifications } from '@mantine/notifications';
+import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
   const [opened, { toggle }] = useDisclosure();
@@ -84,16 +85,50 @@ const App: React.FC = () => {
       return;
     }
 
-    // Direct order creation without prompting for a name
-    // TODO: Implement actual order creation to database
+    try {
+      const timestamp = Date.now();
+      const orderNumber = `ORD-${timestamp}`;
 
-    setCartOpened(false);
-    setOrderedItems([]);
-    notifications.show({
-      title: 'Order Created',
-      message: `Order placed successfully with ${orderedItems.length} items`,
-      color: 'green'
-    });
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          order_number: orderNumber,
+          telegram_user_id: user.id,
+          status: 'New'
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      const orderItems = orderedItems.map(item => ({
+        order_id: orderData.id,
+        item_name: item.Item_name,
+        quantity: item.quantity,
+        category: item.category || null
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      setCartOpened(false);
+      setOrderedItems([]);
+      notifications.show({
+        title: 'Order Created',
+        message: `Order ${orderNumber} placed successfully with ${orderedItems.length} items`,
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Error creating order:', err);
+      notifications.show({
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Failed to create order',
+        color: 'red'
+      });
+    }
   };
 
   const handleExport = () => {

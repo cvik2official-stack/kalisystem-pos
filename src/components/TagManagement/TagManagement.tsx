@@ -14,7 +14,7 @@ interface TagManagementProps {
 
 const TagManagement: React.FC<TagManagementProps> = ({ initialView = 'categories' }) => {
   const { categories, loading: categoriesLoading } = useCategories();
-  const { suppliers, loading: suppliersLoading } = useSuppliers();
+  const { suppliers, loading: suppliersLoading, refetch: refetchSuppliers } = useSuppliers();
 
   const getTabValue = (view: string) => {
     if (view === 'users') return 'users';
@@ -69,9 +69,7 @@ const TagManagement: React.FC<TagManagementProps> = ({ initialView = 'categories
             <SupplierManagement
               suppliers={suppliers}
               categories={categories}
-              onUpdate={(updatedSuppliers) => {
-                console.log('Suppliers updated:', updatedSuppliers);
-              }}
+              onUpdate={refetchSuppliers}
             />
           )}
         </Tabs.Panel>

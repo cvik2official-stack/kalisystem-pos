@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Table, Badge, Button, Group, ActionIcon, Modal, TextInput, Switch, ColorInput, MultiSelect } from '@mantine/core';
+import { Table, Badge, Button, Group, ActionIcon, Modal, TextInput, Switch, MultiSelect, NumberInput } from '@mantine/core';
 import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
 import { Supplier, Category } from '../../types';
+import { supabase } from '../../lib/supabase';
+import { notifications } from '@mantine/notifications';
 
 interface SupplierManagementProps {
   suppliers: Supplier[];
   categories: Category[];
-  onUpdate: (suppliers: Supplier[]) => void;
+  onUpdate: () => void;
 }
 
 const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, categories, onUpdate }) => {
@@ -15,27 +17,71 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
   const [formData, setFormData] = useState({
     name: '',
     contact: '',
-    email: '',
-    color: '#3498db',
+    groupChatId: undefined as number | undefined,
+    location: '',
+    qrCode: '',
+    priceList: '',
+    tags: [] as string[],
     active: true,
     categories: [] as string[],
   });
 
-  const handleSubmit = () => {
-    if (editingSupplier) {
-      const updatedSuppliers = suppliers.map(supplier =>
-        supplier.id === editingSupplier.id ? { ...supplier, ...formData } : supplier
-      );
-      onUpdate(updatedSuppliers);
-    } else {
-      const newSupplier: Supplier = {
-        id: Date.now().toString(),
-        ...formData,
-      };
-      onUpdate([...suppliers, newSupplier]);
+  const handleSubmit = async () => {
+    try {
+      if (editingSupplier) {
+        const { error } = await supabase
+          .from('suppliers')
+          .update({
+            name: formData.name,
+            supplier_contact: formData.contact || null,
+            group_chat_id: formData.groupChatId || null,
+            location: formData.location || null,
+            qr_code: formData.qrCode || null,
+            price_list: formData.priceList || null,
+            tags: formData.tags,
+            active: formData.active,
+            categories: formData.categories
+          })
+          .eq('id', editingSupplier.id);
+
+        if (error) throw error;
+        notifications.show({
+          title: 'Success',
+          message: 'Supplier updated successfully',
+          color: 'green'
+        });
+      } else {
+        const { error } = await supabase
+          .from('suppliers')
+          .insert({
+            name: formData.name,
+            supplier_contact: formData.contact || null,
+            group_chat_id: formData.groupChatId || null,
+            location: formData.location || null,
+            qr_code: formData.qrCode || null,
+            price_list: formData.priceList || null,
+            tags: formData.tags,
+            active: formData.active,
+            categories: formData.categories
+          });
+
+        if (error) throw error;
+        notifications.show({
+          title: 'Success',
+          message: 'Supplier added successfully',
+          color: 'green'
+        });
+      }
+      onUpdate();
+      setOpened(false);
+      resetForm();
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Failed to save supplier',
+        color: 'red'
+      });
     }
-    setOpened(false);
-    resetForm();
   };
 
   const handleEdit = (supplier: Supplier) => {
@@ -43,16 +89,38 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
     setFormData({
       name: supplier.name,
       contact: supplier.contact || '',
-      email: supplier.email || '',
-      color: supplier.color,
+      groupChatId: supplier.groupChatId,
+      location: supplier.location || '',
+      qrCode: supplier.qrCode || '',
+      priceList: supplier.priceList || '',
+      tags: supplier.tags || [],
       active: supplier.active,
       categories: supplier.categories || [],
     });
     setOpened(true);
   };
 
-  const handleDelete = (supplierId: string) => {
-    onUpdate(suppliers.filter(supplier => supplier.id !== supplierId));
+  const handleDelete = async (supplierId: string) => {
+    try {
+      const { error } = await supabase
+        .from('suppliers')
+        .delete()
+        .eq('id', supplierId);
+
+      if (error) throw error;
+      notifications.show({
+        title: 'Success',
+        message: 'Supplier deleted successfully',
+        color: 'green'
+      });
+      onUpdate();
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Failed to delete supplier',
+        color: 'red'
+      });
+    }
   };
 
   const resetForm = () => {
@@ -60,8 +128,11 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
     setFormData({
       name: '',
       contact: '',
-      email: '',
-      color: '#3498db',
+      groupChatId: undefined,
+      location: '',
+      qrCode: '',
+      priceList: '',
+      tags: [],
       active: true,
       categories: [],
     });
@@ -72,11 +143,29 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
     label: `${cat.icon} ${cat.name}`
   }));
 
+  const handleToggleActive = async (supplier: Supplier, checked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('suppliers')
+        .update({ active: checked })
+        .eq('id', supplier.id);
+
+      if (error) throw error;
+      onUpdate();
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update supplier status',
+        color: 'red'
+      });
+    }
+  };
+
   const rows = suppliers.map((supplier) => (
     <Table.Tr key={supplier.id}>
       <Table.Td style={{ color: '#000' }}>{supplier.name}</Table.Td>
       <Table.Td style={{ color: '#000' }}>{supplier.contact || '-'}</Table.Td>
-      <Table.Td style={{ color: '#000' }}>{supplier.email || '-'}</Table.Td>
+      <Table.Td style={{ color: '#000' }}>{supplier.groupChatId || '-'}</Table.Td>
       <Table.Td>
         <Group gap="xs">
           {supplier.categories?.map(catId => {
@@ -90,7 +179,11 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
         </Group>
       </Table.Td>
       <Table.Td>
-        <Switch checked={supplier.active} readOnly size="sm" />
+        <Switch
+          checked={supplier.active}
+          onChange={(e) => handleToggleActive(supplier, e.currentTarget.checked)}
+          size="sm"
+        />
       </Table.Td>
       <Table.Td>
         <Group gap="xs">
@@ -119,7 +212,7 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
           <Table.Tr>
             <Table.Th style={{ color: '#000' }}>Name</Table.Th>
             <Table.Th style={{ color: '#000' }}>Contact</Table.Th>
-            <Table.Th style={{ color: '#000' }}>Email</Table.Th>
+            <Table.Th style={{ color: '#000' }}>Group Chat ID</Table.Th>
             <Table.Th style={{ color: '#000' }}>Categories</Table.Th>
             <Table.Th style={{ color: '#000' }}>Active</Table.Th>
             <Table.Th style={{ color: '#000' }}>Actions</Table.Th>
@@ -128,23 +221,47 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
         <Table.Tbody>{rows}</Table.Tbody>
       </Table>
 
-      <Modal opened={opened} onClose={() => { setOpened(false); resetForm(); }} title={editingSupplier ? 'Edit Supplier' : 'Add Supplier'}>
+      <Modal opened={opened} onClose={() => { setOpened(false); resetForm(); }} title={editingSupplier ? 'Edit Supplier' : 'Add Supplier'} size="lg">
         <TextInput
           label="Name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           mb="md"
+          required
         />
         <TextInput
-          label="Contact"
+          label="Supplier Contact (Telegram Username)"
           value={formData.contact}
           onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+          placeholder="@username"
+          mb="md"
+        />
+        <NumberInput
+          label="Group Chat ID"
+          value={formData.groupChatId}
+          onChange={(val) => setFormData({ ...formData, groupChatId: typeof val === 'number' ? val : undefined })}
+          placeholder="Enter Telegram group chat ID"
           mb="md"
         />
         <TextInput
-          label="Email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          label="Location URL"
+          value={formData.location}
+          onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+          placeholder="https://maps.google.com/..."
+          mb="md"
+        />
+        <TextInput
+          label="QR Code URL"
+          value={formData.qrCode}
+          onChange={(e) => setFormData({ ...formData, qrCode: e.target.value })}
+          placeholder="URL to QR code image"
+          mb="md"
+        />
+        <TextInput
+          label="Price List URL"
+          value={formData.priceList}
+          onChange={(e) => setFormData({ ...formData, priceList: e.target.value })}
+          placeholder="URL to price list"
           mb="md"
         />
         <MultiSelect
@@ -152,12 +269,6 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
           value={formData.categories}
           onChange={(value) => setFormData({ ...formData, categories: value })}
           data={categoryOptions}
-          mb="md"
-        />
-        <ColorInput
-          label="Color"
-          value={formData.color}
-          onChange={(color) => setFormData({ ...formData, color })}
           mb="md"
         />
         <Switch
