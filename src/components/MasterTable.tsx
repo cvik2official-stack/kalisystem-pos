@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Badge, ActionIcon, Group, LoadingOverlay, Alert, Paper, Text, TextInput, Button, Flex, Menu, Modal, Select, Checkbox, Tooltip, Autocomplete, NumberInput } from '@mantine/core';
-import { IconEdit, IconTrash, IconAlertCircle, IconSearch, IconMenu2, IconX, IconColumns, IconPlus, IconSettings, IconCategory, IconSquareCheck, IconMinus } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconAlertCircle, IconSearch, IconMenu2, IconX, IconColumns, IconPlus, IconSettings, IconCategory, IconSquareCheck, IconMinus, IconShoppingCartPlus } from '@tabler/icons-react';
 import { OrderedCSVItem } from '../types';
 import ItemForm from './ItemForm';
 import { notifications } from '@mantine/notifications';
@@ -41,7 +41,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
   const [columnMenuOpened, setColumnMenuOpened] = useState(false);
   const [multiselectMode, setMultiselectMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-  const [bulkQuantity, setBulkQuantity] = useState<number>(1);
+  const [rowQuantities, setRowQuantities] = useState<Map<number, number>>(new Map());
   const [visibleColumns, setVisibleColumns] = useState({
     itemName: true,
     category: true,
@@ -419,34 +419,36 @@ const MasterTable: React.FC<MasterTableProps> = ({
     setSelectedItems(newSelected);
   };
 
-  const handleBulkAddToOrder = () => {
-    if (selectedItems.size === 0) {
-      notifications.show({
-        title: 'No Items Selected',
-        message: 'Please select items to add to order',
-        color: 'orange',
-      });
-      return;
-    }
-
-    const itemsToAdd = Array.from(selectedItems).map(index => {
-      const item = filteredItems[index];
-      return {
-        ...item,
-        quantity: bulkQuantity
-      };
-    });
-
-    setOrderedItems(prev => [...prev, ...itemsToAdd]);
+  const handleAddItemToOrder = (item: any, index: number) => {
+    const quantity = rowQuantities.get(index) || 1;
+    const orderItem: OrderedCSVItem = {
+      ...item,
+      quantity
+    };
+    setOrderedItems(prev => [...prev, orderItem]);
     notifications.show({
-      title: 'Items Added',
-      message: `${selectedItems.size} items added with quantity ${bulkQuantity}`,
+      title: 'Item Added',
+      message: `"${item.Item_name}" added with quantity ${quantity}`,
       color: 'green',
     });
+  };
 
-    setSelectedItems(new Set());
-    setMultiselectMode(false);
-    setBulkQuantity(1);
+  const updateRowQuantity = (index: number, delta: number) => {
+    setRowQuantities(prev => {
+      const newMap = new Map(prev);
+      const currentQty = newMap.get(index) || 1;
+      const newQty = Math.max(1, currentQty + delta);
+      newMap.set(index, newQty);
+      return newMap;
+    });
+  };
+
+  const setRowQuantity = (index: number, value: number) => {
+    setRowQuantities(prev => {
+      const newMap = new Map(prev);
+      newMap.set(index, Math.max(1, value));
+      return newMap;
+    });
   };
 
   if (error) {
@@ -573,31 +575,81 @@ const MasterTable: React.FC<MasterTableProps> = ({
           </Text>
         </Table.Td>
       )}
-      {showActions && (
+      {(showActions || (multiselectMode && selectedItems.has(index))) && (
         <Table.Td>
-          <Group gap="xs">
-            <ActionIcon 
-              variant="subtle" 
-              color="blue"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(item, index);
-              }}
-              title="Edit item"
-            >
-              <IconEdit size={16} />
-            </ActionIcon>
-            <ActionIcon 
-              variant="subtle" 
-              color="red"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(index);
-              }}
-              title="Delete item"
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
+          <Group gap="xs" wrap="nowrap">
+            {multiselectMode && selectedItems.has(index) ? (
+              <>
+                <ActionIcon
+                  size="sm"
+                  variant="light"
+                  color="gray"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateRowQuantity(index, -1);
+                  }}
+                  title="Decrease quantity"
+                >
+                  <IconMinus size={14} />
+                </ActionIcon>
+                <NumberInput
+                  value={rowQuantities.get(index) || 1}
+                  onChange={(val) => setRowQuantity(index, typeof val === 'number' ? val : 1)}
+                  min={1}
+                  max={999}
+                  style={{ width: '60px' }}
+                  size="xs"
+                  hideControls
+                />
+                <ActionIcon
+                  size="sm"
+                  variant="light"
+                  color="gray"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateRowQuantity(index, 1);
+                  }}
+                  title="Increase quantity"
+                >
+                  <IconPlus size={14} />
+                </ActionIcon>
+                <Button
+                  size="xs"
+                  leftSection={<IconShoppingCartPlus size={14} />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddItemToOrder(item, index);
+                  }}
+                >
+                  Add
+                </Button>
+              </>
+            ) : showActions ? (
+              <>
+                <ActionIcon
+                  variant="subtle"
+                  color="blue"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(item, index);
+                  }}
+                  title="Edit item"
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+                <ActionIcon
+                  variant="subtle"
+                  color="red"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(index);
+                  }}
+                  title="Delete item"
+                >
+                  <IconTrash size={16} />
+                </ActionIcon>
+              </>
+            ) : null}
           </Group>
         </Table.Td>
       )}
@@ -704,34 +756,11 @@ const MasterTable: React.FC<MasterTableProps> = ({
             </Menu>
           </Group>
 
-          {/* Multiselect Controls */}
+          {/* Multiselect status */}
           {multiselectMode && selectedItems.size > 0 && (
-            <Group gap="xs">
-              <NumberInput
-                value={bulkQuantity}
-                onChange={(val) => setBulkQuantity(typeof val === 'number' ? val : 1)}
-                min={1}
-                max={999}
-                style={{ width: '80px' }}
-                size="xs"
-              />
-              <Button
-                size="xs"
-                leftSection={<IconPlus size={14} />}
-                onClick={handleBulkAddToOrder}
-              >
-                Add {selectedItems.size} item{selectedItems.size > 1 ? 's' : ''}
-              </Button>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                color="red"
-                onClick={() => setSelectedItems(new Set())}
-                title="Clear selection"
-              >
-                <IconX size={16} />
-              </ActionIcon>
-            </Group>
+            <Badge size="lg" color="blue">
+              {selectedItems.size} item{selectedItems.size > 1 ? 's' : ''} selected
+            </Badge>
           )}
         </Flex>
       </div>
@@ -892,7 +921,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
                 {visibleColumns.orderQuantity && <Table.Th style={{ color: '#000', fontSize: '12px', padding: '8px 12px' }}>Order Qty</Table.Th>}
                 {visibleColumns.defaultQuantity && <Table.Th style={{ color: '#000', fontSize: '12px', padding: '8px 12px' }}>Default Qty</Table.Th>}
                 {visibleColumns.supplierAlternative && <Table.Th style={{ color: '#000', fontSize: '12px', padding: '8px 12px' }}>Alt Supplier</Table.Th>}
-                {showActions && <Table.Th style={{ color: '#000', fontSize: '12px', padding: '8px 12px' }}>Actions</Table.Th>}
+                {(showActions || multiselectMode) && <Table.Th style={{ color: '#000', fontSize: '12px', padding: '8px 12px' }}>Actions</Table.Th>}
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody style={{ backgroundColor: 'white' }}>
