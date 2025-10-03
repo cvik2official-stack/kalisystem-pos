@@ -76,12 +76,6 @@ const SideMenu: React.FC<SideMenuProps> = ({
       icon: IconTruck,
       description: 'Manage supplier information'
     },
-    {
-      key: 'tags',
-      label: 'Tags',
-      icon: IconTags,
-      description: 'Manage tags and labels'
-    },
   ];
 
   const handleImportClick = () => {

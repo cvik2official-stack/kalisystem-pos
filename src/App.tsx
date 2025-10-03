@@ -217,10 +217,11 @@ const App: React.FC = () => {
       case 'orders':
         return <OrderTable />;
       case 'users':
+        return <TagManagement initialView="users" />;
       case 'categories':
+        return <TagManagement initialView="categories" />;
       case 'suppliers':
-      case 'tags':
-        return <TagManagement initialView={currentPage} />;
+        return <TagManagement initialView="suppliers" />;
       default:
         return (
           <MasterTable

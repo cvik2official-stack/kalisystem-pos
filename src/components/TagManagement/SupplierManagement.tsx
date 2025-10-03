@@ -143,7 +143,8 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
     label: `${cat.icon} ${cat.name}`
   }));
 
-  const handleToggleActive = async (supplier: Supplier, checked: boolean) => {
+  const handleToggleActive = async (supplier: Supplier, event: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = event.currentTarget.checked;
     try {
       const { error } = await supabase
         .from('suppliers')
@@ -166,7 +167,7 @@ const SupplierManagement: React.FC<SupplierManagementProps> = ({ suppliers, cate
       <Table.Td>
         <Switch
           checked={supplier.active}
-          onChange={(e) => handleToggleActive(supplier, e.currentTarget.checked)}
+          onChange={(e) => handleToggleActive(supplier, e)}
           size="sm"
         />
       </Table.Td>
