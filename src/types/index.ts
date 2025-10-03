@@ -23,7 +23,8 @@ export interface Category {
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'manager' | 'driver' | 'supplier' | 'owner';
+  telegramUsername: string;
+  role: 'user' | 'admin' | 'manager' | 'driver' | 'supplier';
   team?: string;
   color: string;
   active: boolean;
@@ -40,9 +41,7 @@ export interface Team {
 export interface Supplier {
   id: string;
   name: string;
-  contact?: string;
-  email?: string;
-  color: string;
+  supplierContact: string;
   active: boolean;
   categories?: string[];
   groupChatId?: number;
@@ -50,15 +49,6 @@ export interface Supplier {
   qrCode?: string;
   priceList?: string;
   tags?: string[];
-}
-
-export interface MeasureUnit {
-  id: string;
-  name: string;
-  symbol: string;
-  type: 'weight' | 'volume' | 'length' | 'count' | 'time';
-  baseUnit?: string;
-  conversionFactor?: number;
 }
 
 export interface Tag {
