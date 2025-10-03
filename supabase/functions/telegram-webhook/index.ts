@@ -13,7 +13,7 @@ serve(async (req)=>{
   }
   try {
     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '7976740702:AAFnk67IV7t0gROt8-Q_rgPQ1odfps-r-d0';
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '8495376658:AAF7csonqWBtf8xxeCoKjSuKjKVNApBjJ3Y';
     const body = await req.json();
     // Handle order from frontend
     if (body.type === 'order') {
