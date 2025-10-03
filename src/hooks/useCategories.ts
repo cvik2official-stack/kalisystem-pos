@@ -21,15 +21,21 @@ export const useCategories = () => {
         throw supabaseError;
       }
 
-      const mappedCategories: Category[] = (data || []).map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        color: cat.color,
-        icon: cat.icon,
-        parentId: cat.parent_id || undefined,
-        level: cat.level as 'parent' | 'main' | 'category' | 'subcategory',
-        order: cat.order_number
-      }));
+      const mappedCategories: Category[] = (data || []).map(cat => {
+        const nameStr = cat.name || '';
+        const emojiMatch = nameStr.match(/^([\u{1F300}-\u{1F9FF}])/u);
+        const icon = emojiMatch ? emojiMatch[1] : '📋';
+
+        return {
+          id: cat.id,
+          name: nameStr,
+          color: cat.color,
+          icon: icon,
+          parentId: cat.parent_id || undefined,
+          level: cat.level as 'parent' | 'main' | 'category' | 'subcategory',
+          order: cat.order_number
+        };
+      });
 
       setCategories(mappedCategories);
     } catch (err) {
