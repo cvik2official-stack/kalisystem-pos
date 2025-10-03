@@ -96,15 +96,12 @@ const App: React.FC = () => {
     }
 
     try {
-      const timestamp = Date.now();
-      const orderNumber = `ORD-${timestamp}`;
-
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
-          order_number: orderNumber,
           telegram_user_id: user.id,
-          status: 'New'
+          status: 'New',
+          team_tags: []
         })
         .select()
         .single();
@@ -137,7 +134,7 @@ const App: React.FC = () => {
       clearCart();
       notifications.show({
         title: 'Order Created',
-        message: `Order ${orderNumber} placed successfully with ${cartItems.length} items`,
+        message: `Order ${orderData.order_number} placed successfully with ${cartItems.length} items`,
         color: 'green'
       });
     } catch (err) {
@@ -156,13 +153,21 @@ const App: React.FC = () => {
   };
 
   const sendOrderToTelegram = async (userId: number, message: string, items: any[]) => {
-    const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('Supabase environment variables not configured');
+      return;
+    }
+    
+    const webhookUrl = `${supabaseUrl}/functions/v1/telegram-webhook`;
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${supabaseKey}`,
       },
       body: JSON.stringify({
         type: 'order',
@@ -173,6 +178,8 @@ const App: React.FC = () => {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Telegram webhook error:', errorText);
       throw new Error('Failed to send order to Telegram');
     }
   };

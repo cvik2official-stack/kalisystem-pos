@@ -91,11 +91,13 @@ export const useCart = () => {
         category: item.category
       }));
 
-      const { error: itemsError } = await supabase
-        .from('cart_items')
-        .insert(cartItems);
+      if (cartItems.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('cart_items')
+          .insert(cartItems);
 
-      if (itemsError) throw itemsError;
+        if (itemsError) throw itemsError;
+      }
 
       return cartData.id;
     } catch (err) {
