@@ -52,6 +52,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
     defaultQuantity: false,
     supplierAlternative: false
   });
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Category filter state with localStorage persistence
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
@@ -84,19 +85,28 @@ const MasterTable: React.FC<MasterTableProps> = ({
     }
   }, [items]);
 
-  // Create autocomplete data from display items
-  const autocompleteData = displayItems.reduce((acc: string[], item) => {
-    if (item.Item_name && !acc.includes(item.Item_name)) {
-      acc.push(item.Item_name);
-    }
-    if (item.category && !acc.includes(item.category)) {
-      acc.push(item.category);
-    }
-    if (item.default_supplier && !acc.includes(item.default_supplier)) {
-      acc.push(item.default_supplier);
-    }
-    return acc;
-  }, []);
+  // Custom default actions when search is empty
+  const defaultSearchActions = [
+    '💾 Save cart',
+    '📦 Create order',
+    '➕ Create item'
+  ];
+
+  // Create autocomplete data from display items or default actions
+  const autocompleteData = searchQuery.trim() === '' && searchFocused
+    ? defaultSearchActions
+    : displayItems.reduce((acc: string[], item) => {
+        if (item.Item_name && !acc.includes(item.Item_name)) {
+          acc.push(item.Item_name);
+        }
+        if (item.category && !acc.includes(item.category)) {
+          acc.push(item.category);
+        }
+        if (item.default_supplier && !acc.includes(item.default_supplier)) {
+          acc.push(item.default_supplier);
+        }
+        return acc;
+      }, []);
 
   const handleEdit = (item: any, index: number) => {
     setEditingItem(item);
@@ -301,15 +311,50 @@ const MasterTable: React.FC<MasterTableProps> = ({
   };
 
   const handleAutocompleteSelect = (value: string) => {
+    // Handle default action selections
+    if (value === '💾 Save cart') {
+      setSearchQuery('');
+      setSearchFocused(false);
+      if (orderedItems.length === 0) {
+        notifications.show({
+          title: 'Empty Cart',
+          message: 'Add items to cart before saving',
+          color: 'orange',
+        });
+        return;
+      }
+      // TODO: Implement save cart functionality
+      notifications.show({
+        title: 'Save Cart',
+        message: 'Cart save functionality coming soon',
+        color: 'blue',
+      });
+      return;
+    }
+
+    if (value === '📦 Create order') {
+      setSearchQuery('');
+      setSearchFocused(false);
+      handleCreateOrder();
+      return;
+    }
+
+    if (value === '➕ Create item') {
+      setSearchQuery('');
+      setSearchFocused(false);
+      setEditingItem({ Item_name: '', category: '', default_supplier: '' });
+      return;
+    }
+
     setSearchQuery(value);
-    
+
     // Auto-add item when selected from autocomplete
-    const selectedItem = displayItems.find(item => 
-      item.Item_name === value || 
-      item.category === value || 
+    const selectedItem = displayItems.find(item =>
+      item.Item_name === value ||
+      item.category === value ||
       item.default_supplier === value
     );
-    
+
     if (selectedItem) {
       const orderItem: OrderedCSVItem = {
         ...selectedItem,
@@ -322,6 +367,7 @@ const MasterTable: React.FC<MasterTableProps> = ({
         color: 'green',
       });
       setSearchQuery('');
+      setSearchFocused(false);
     }
   };
 
@@ -567,11 +613,13 @@ const MasterTable: React.FC<MasterTableProps> = ({
             placeholder="Search items... (Enter to add, 1-9 for quantity)"
             value={searchQuery}
             onChange={setSearchQuery}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
             onKeyDown={handleSearchKeyDown}
             onOptionSubmit={handleAutocompleteSelect}
-            data={autocompleteData.filter(item => 
+            data={autocompleteData.filter(item =>
               item.toLowerCase().includes(searchQuery.toLowerCase())
-            ).slice(0, 10)} // Limit to 10 suggestions
+            ).slice(0, 10)}
             leftSection={<IconSearch size={16} />}
             rightSection={
               searchQuery && (
